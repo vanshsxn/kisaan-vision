@@ -55,7 +55,7 @@ const HeroSection = () => {
         <video
           ref={videoRef}
           // Using the direct MP4 link from your Cloudinary account
-          src="https://res.cloudinary.com/divan2dib/video/upload/v1708700000/tractor-video.mp4" 
+          src="https://res.cloudinary.com/divan2dib/video/upload/v1771002367/0213_pgikbv.mp4" 
           muted
           playsInline
           preload="auto"
