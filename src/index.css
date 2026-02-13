@@ -107,3 +107,15 @@
     background: radial-gradient(circle at center, hsla(145, 60%, 45%, 0.15) 0%, transparent 70%);
   }
 }
+video {
+  will-change: transform, contents;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Ensure no default Vite padding ruins the layout */
+#root {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
