@@ -1,73 +1,70 @@
-# Welcome to your Lovable project
+🌾 Kisaan Vision Page
+Kisaan Vision is a next-generation agriculture landing page built with React, Vite, and Framer Motion. It features a high-performance video-scrubbing (play-on-scroll) hero section that allows users to explore precision farming through an immersive drone-shot experience.
 
-## Project info
+🚀 Key Features
+Cinematic Video Scrubbing: Interactive hero section where the drone footage playback is synced directly to the user's scroll progress using Framer Motion and useScroll.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+AI-Driven Interface: Deep-green aesthetic designed for modern AgTech solutions.
 
-## How can I edit this code?
+Responsive Design: Optimized for all screen sizes using Tailwind CSS.
 
-There are several ways of editing your application.
+Glassmorphism UI: High-end glass effects and green glow accents for a premium look.
 
-**Use Lovable**
+🛠️ Tech Stack
+Framework: React (Vite)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Styling: Tailwind CSS
 
-Changes made via Lovable will be committed automatically to this repo.
+Animations: Framer Motion
 
-**Use your preferred IDE**
+Icons: Lucide React
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+State Management: React Hooks (useRef, useEffect)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+📦 Getting Started
+1. Clone the repository
+Bash
+git clone https://github.com/vanshsxn/kisaan-vision-landing.git
+cd kisaan-vision-landing
+2. Install dependencies
+Bash
+npm install
+3. Setup the Video
+Since high-quality video files can be heavy for Git, follow these steps:
 
-Follow these steps:
+Place your hero-farm.mp4 in the public/ folder.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Ensure the video is encoded with a high keyframe frequency for smooth scrolling.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Run the development server
+Bash
 npm run dev
-```
+🎥 Implementation Detail: Play-on-Scroll
+The core experience of this landing page is the "Scrub-on-Scroll" logic found in HeroSection.tsx. We map the scrollYProgress to the currentTime of the video:
 
-**Edit a file directly in GitHub**
+JavaScript
+useMotionValueEvent(scrollYProgress, "change", (latest) => {
+  if (videoRef.current) {
+    videoRef.current.currentTime = latest * videoRef.current.duration;
+  }
+});
+🔗 Connect with MV Studios
+Built with precision by MV Studios Japan.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Website: mvstudiosjapan.lovable.app
 
-**Use GitHub Codespaces**
+Instagram: @mvstudiosjapan
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+LinkedIn: Vansh Saxena
 
-## What technologies are used for this project?
+How to use this:
+Create a new file in your root folder named README.md.
 
-This project is built with:
+Copy and paste the text above into it.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Commit and push:
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Bash
+git add README.md
+git commit -m "docs: add comprehensive readme"
+git push
