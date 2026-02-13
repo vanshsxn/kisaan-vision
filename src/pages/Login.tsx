@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
+import AnimatedLogo from "@/components/AnimatedLogo"; // Import the new component
 
 const Login = () => {
   const navigate = useNavigate();
@@ -32,20 +33,26 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      {/* Background glow */}
+    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md relative"
       >
-        {/* Logo */}
-        <Link to="/" className="block text-center mb-10">
-          <div className="text-2xl font-black tracking-wider text-foreground">KISAAN</div>
-          <div className="text-2xl font-black tracking-wider text-gradient-green">VISION</div>
+        <button 
+          onClick={() => navigate("/")}
+          className="group mb-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          Back to Home
+        </button>
+
+        {/* REPLACED STATIC LOGO WITH ANIMATED ONE */}
+        <Link to="/" className="block text-center mb-10 overflow-visible">
+          <AnimatedLogo />
         </Link>
 
         <div className="glass rounded-2xl p-8 glow-border">

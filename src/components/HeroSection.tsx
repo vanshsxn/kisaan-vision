@@ -4,72 +4,70 @@ import { useNavigate } from "react-router-dom";
 const HeroSection = () => {
   const navigate = useNavigate();
 
+  // Cloudinary Optimization Tip: 
+  // Adding 'f_auto,q_auto' to the URL tells Cloudinary to deliver the smallest 
+  // file size possible based on the user's browser (WebP/AV1).
+  const videoUrl = "https://res.cloudinary.com/divan2dib/video/upload/f_auto,q_auto/v1771002367/0213_pgikbv.mp4";
+
   return (
     <div className="relative h-screen w-full bg-black overflow-hidden">
       
-      {/* 1. AUTO-PLAY VIDEO (PLAYS ONCE) */}
+      {/* 1. OPTIMIZED VIDEO */}
       <video
         autoPlay
         muted
         playsInline
+        // We use 'poster' to show a frame immediately while the video downloads
+        poster="https://res.cloudinary.com/divan2dib/video/upload/so_0/v1771002367/0213_pgikbv.jpg"
         className="absolute inset-0 h-full w-full object-cover z-0"
-        /* We removed 'loop' so it stops at the end */
-        onEnded={(e) => {
-          // Optional: You can trigger an action when the video finishes
-          console.log("Intro complete");
-        }}
       >
-        <source 
-          src="https://res.cloudinary.com/divan2dib/video/upload/v1771002367/0213_pgikbv.mp4" 
-          type="video/mp4" 
-        />
+        <source src={videoUrl} type="video/mp4" />
       </video>
 
-      {/* 2. THE OVERLAY (Ensures text is readable) */}
-      <div className="absolute inset-0 bg-black/50 z-10" />
+      {/* 2. GRADIENT OVERLAY (Prevents the text-overlap from looking messy) */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/60 z-10" />
 
-      {/* 3. CENTERED LOGO TEXT */}
-      <div className="relative z-20 flex h-full flex-col items-center justify-center px-6 text-center">
+      {/* 3. ALIGNED TEXT CONTENT */}
+      <div className="relative z-20 flex h-full flex-col items-center justify-center px-4">
         
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="flex flex-col items-center"
+          transition={{ duration: 0.8 }}
+          className="flex flex-col items-center text-center select-none"
         >
-          {/* Aligned Typography: K and V centered */}
-          <h1 className="flex flex-col items-center font-black tracking-tighter text-white leading-[0.8] uppercase">
-            <span className="text-7xl md:text-9xl lg:text-[10rem]">Kisaan</span>
-            <span className="text-7xl md:text-9xl lg:text-[10rem] text-primary">Vision</span>
+          {/* THE LOGO: Fixed 'Leading' to prevent overlapping */}
+          <h1 className="flex flex-col items-center font-black tracking-tighter uppercase">
+            {/* KISAAN - White */}
+            <span className="text-[16vw] md:text-[10rem] lg:text-[13rem] leading-[0.7] text-white">
+              Kisaan
+            </span>
+            {/* VISION - Green, perfectly aligned under K */}
+            <span className="text-[16vw] md:text-[10rem] lg:text-[13rem] leading-[0.7] text-primary">
+              Vision
+            </span>
           </h1>
 
+          {/* SUBTEXT: Increased margin-top to separate from large font */}
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 1 }}
-            className="mt-8 max-w-lg text-lg md:text-xl text-gray-300 font-medium tracking-wide"
+            transition={{ delay: 0.4 }}
+            className="mt-16 max-w-xl text-sm md:text-lg text-gray-300 font-medium tracking-widest px-4"
           >
-            Revolutionizing Agriculture Through Precision Intelligence.
+            REVOLUTIONIZING AGRICULTURE THROUGH PRECISION INTELLIGENCE.
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2 }}
-            className="mt-10"
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/chatbot")}
+            className="mt-10 rounded-full bg-primary px-12 py-4 font-bold text-black shadow-xl shadow-primary/10"
           >
-            <button 
-              onClick={() => navigate("/chatbot")}
-              className="rounded-full bg-primary px-12 py-4 font-bold text-black transition-transform hover:scale-105 active:scale-95"
-            >
-              Get Started
-            </button>
-          </motion.div>
+            Get Started
+          </motion.button>
         </motion.div>
       </div>
-
-      {/* Blends the bottom of the hero into your website content */}
-      <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-black to-transparent z-20" />
     </div>
   );
 };
