@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { motion, useScroll, useTransform, useSpring, useMotionValueEvent } from "framer-motion";
+import { motion, useScroll, useSpring, useTransform, useMotionValueEvent } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
@@ -7,30 +7,39 @@ const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
 
-  // 1. Track Scroll Progress
+  // 1. Capture Scroll Progress
+  // target: the 800vh container | offset: start to end
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end end"],
   });
 
-  // 2. Smooth the Scroll Progress (This kills the lag!)
+  // 2. The "Smoothness" Engine
+  // This aligns the scroll feeling to the video playback
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 35,   // How fast it moves
-    damping: 20,     // How much it bounces/resists
+    stiffness: 35,   // How fast the video 'catches up' to your scroll
+    damping: 25,     // Prevents bouncy jitter
     restDelta: 0.001
   });
 
-  // 3. Sync Video Time to the Smoothed Progress
+  // 3. Sync Video Time with Scroll
   useMotionValueEvent(smoothProgress, "change", (latest) => {
     if (videoRef.current && videoRef.current.duration) {
-      videoRef.current.currentTime = latest * videoRef.current.duration;
+      // Direct assignment within requestAnimationFrame for maximum smoothness
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = latest * videoRef.current.duration;
+        }
+      });
     }
   });
 
-  // 4. Content Animations (Text fades out as you scroll deep into the video)
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
-  const contentScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.9]);
+  // 4. Align UI Elements
+  // Text is fully visible at 0, starts fading out at 10% scroll, gone by 20%
+  const opacity = useTransform(scrollYProgress, [0, 0.1, 0.2], [1, 1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
 
+  // Ensure video is paused on load so it only moves when we scroll
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.pause();
@@ -38,96 +47,60 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <div ref={sectionRef} className="relative h-[500vh] bg-background">
+    /* h-[800vh] gives the 8s video enough "room" to scroll slowly */
+    <div ref={sectionRef} className="relative h-[800vh] bg-black">
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         
         {/* The Video Layer */}
         <video
           ref={videoRef}
-          src="https://www.w3schools.com/html/mov_bbb.mp4" 
+          // Using the direct MP4 link from your Cloudinary account
+          src="https://res.cloudinary.com/divan2dib/video/upload/v1708700000/tractor-video.mp4" 
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+          style={{ filter: "brightness(0.6)" }}
         />
 
-        {/* Overlay Gradients for Readability */}
-        <div className="absolute inset-0 bg-black/20 z-[1]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background z-[2]" />
-
-        {/* Main Content */}
+        {/* Branding Overlay */}
         <motion.div 
-          style={{ opacity: contentOpacity, scale: contentScale }}
+          style={{ opacity, scale }}
           className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center"
         >
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-primary"
+            transition={{ delay: 0.2 }}
+            className="mb-4 text-xs font-bold uppercase tracking-[0.4em] text-primary"
           >
-            Next-Gen Agriculture
+            MV Studios Japan Presents
           </motion.p>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="max-w-4xl text-5xl font-black leading-tight tracking-tight text-white md:text-7xl lg:text-8xl"
-          >
-            Farm Smarter.
-            <br />
-            <span className="text-gradient-green">Grow More.</span>
-          </motion.h1>
+          <h1 className="max-w-5xl text-6xl font-black tracking-tighter text-white md:text-8xl lg:text-9xl">
+            KISAAN <br />
+            <span className="text-primary italic">VISION.</span>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="mt-6 max-w-xl text-lg text-gray-200"
-          >
-            AI-powered precision agriculture that transforms how the world feeds itself.
-          </motion.p>
+          <p className="mt-6 max-w-xl text-lg text-gray-400">
+            Scroll to see how our AI-driven tractors are reshaping the agricultural landscape.
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.1 }}
-            className="mt-10 flex gap-4"
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+          <div className="mt-10 flex gap-4">
+            <button 
               onClick={() => navigate("/chatbot")}
-              className="rounded-full bg-primary px-8 py-3 text-sm font-bold text-black transition-all hover:glow-green"
-            >
-              Explore Solutions
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/signup")}
-              className="glass glow-green-subtle rounded-full px-8 py-3 text-sm font-bold text-white"
+              className="rounded-full bg-primary px-10 py-4 font-bold text-black transition-transform hover:scale-105 active:scale-95"
             >
               Get Started
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
         </motion.div>
 
-        {/* Scroll Indicator */}
-        <motion.div
-          style={{ opacity: contentOpacity }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10"
-        >
-          <span className="text-xs text-white/50 tracking-widest uppercase">Scroll</span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="h-8 w-5 rounded-full border-2 border-white/20 flex items-start justify-center pt-1.5"
-          >
-            <div className="h-1.5 w-1 rounded-full bg-primary" />
-          </motion.div>
-        </motion.div>
+        {/* Scroll Progress Indicator */}
+        <motion.div 
+          className="absolute bottom-0 left-0 h-1.5 bg-primary z-20"
+          style={{ scaleX: scrollYProgress, transformOrigin: "0%" }}
+        />
       </div>
     </div>
   );
