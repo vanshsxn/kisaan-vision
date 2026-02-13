@@ -8,7 +8,7 @@ const AnimatedLogo = () => {
   // Mapping unique animations to each letter index
   const anims = [
     "anim-balance", "anim-shrinkjump", "anim-falling", "anim-rotate", "anim-toplong", "anim-balance",
-    "anim-shrinkjump", "anim-falling", "anim-rotate", "anim-toplong", "anim-balance", "anim-shrinkjump"
+    "anim-balance", "anim-falling", "anim-rotate", "anim-toplong", "anim-balance", "anim-shrinkjump"
   ];
 
   useEffect(() => {
