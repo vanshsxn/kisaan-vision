@@ -1,10 +1,12 @@
 import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import heroVideo from "@/assets/hero-farm.mp4";
 
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -86,6 +88,7 @@ const HeroSection = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/chatbot")}
               className="rounded-full bg-primary px-8 py-3 text-sm font-bold text-primary-foreground transition-all hover:glow-green"
             >
               Explore Solutions
@@ -93,9 +96,10 @@ const HeroSection = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/signup")}
               className="glass glow-green-subtle rounded-full px-8 py-3 text-sm font-bold text-foreground"
             >
-              Watch Demo
+              Get Started
             </motion.button>
           </motion.div>
 

@@ -1,6 +1,23 @@
 import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { LogOut } from "lucide-react";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
@@ -9,17 +26,11 @@ const Navbar = () => {
       className="fixed top-0 left-0 right-0 z-50 glass-strong"
     >
       <div className="container mx-auto flex items-center justify-between px-6 py-4">
-        {/* Logo */}
-        <div className="select-none leading-none">
-          <div className="text-xl font-black tracking-wider text-foreground">
-            KISAAN
-          </div>
-          <div className="text-xl font-black tracking-wider text-gradient-green">
-            VISION
-          </div>
-        </div>
+        <Link to="/" className="select-none leading-none">
+          <div className="text-xl font-black tracking-wider text-foreground">KISAAN</div>
+          <div className="text-xl font-black tracking-wider text-gradient-green">VISION</div>
+        </Link>
 
-        {/* Nav Links */}
         <div className="hidden md:flex items-center gap-8">
           {["Solutions", "Technology", "AI Lab", "Contact"].map((item) => (
             <a
@@ -32,13 +43,30 @@ const Navbar = () => {
           ))}
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="glass glow-green-subtle rounded-full px-5 py-2 text-sm font-semibold text-primary transition-all hover:glow-green"
-        >
-          Get Started
-        </motion.button>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => supabase.auth.signOut()}
+                className="glass rounded-full px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Logout
+              </motion.button>
+            </>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/signup")}
+              className="glass glow-green-subtle rounded-full px-5 py-2 text-sm font-semibold text-primary transition-all hover:glow-green"
+            >
+              Get Started
+            </motion.button>
+          )}
+        </div>
       </div>
     </motion.nav>
   );
