@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Chatbot from "./pages/Chatbot";
+import AuthCallback from "./integrations/lovable/auth-callback";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useDevToolsBlocker } from "./hooks/useDevToolsBlocker";
@@ -36,6 +37,7 @@ const AppContent = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/~oauth" element={<AuthCallback />} />
         <Route
           path="/chatbot"
           element={
