@@ -1,33 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
-import AnimatedLogo from "@/components/AnimatedLogo"; // Import the new component
+import { Eye, EyeOff, KeyRound } from "lucide-react";
+import AnimatedLogo from "@/components/AnimatedLogo";
 
-const Login = () => {
+const ResetPassword = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    // The recovery link sets a session automatically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setSessionReady(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      toast.error("Please fill in all fields");
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Welcome back!");
+      toast.success("Password updated successfully!");
       navigate("/");
     }
   };
@@ -42,38 +57,17 @@ const Login = () => {
         transition={{ duration: 0.8 }}
         className="w-full max-w-md relative"
       >
-        <button 
-          onClick={() => navigate("/")}
-          className="group mb-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Back to Home
-        </button>
-
-        {/* REPLACED STATIC LOGO WITH ANIMATED ONE */}
         <Link to="/" className="block text-center mb-10 overflow-visible">
           <AnimatedLogo />
         </Link>
 
         <div className="glass rounded-2xl p-8 glow-border">
-          <h2 className="text-2xl font-black text-foreground mb-2">Welcome Back</h2>
-          <p className="text-sm text-muted-foreground mb-8">Sign in to access your dashboard</p>
+          <h2 className="text-2xl font-black text-foreground mb-2">New Password</h2>
+          <p className="text-sm text-muted-foreground mb-8">Enter your new password below</p>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleUpdate} className="space-y-5">
             <div>
-              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="farmer@kisaanvision.com"
-                className="mt-1.5 bg-secondary/50 border-border"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-muted-foreground">New Password</Label>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
@@ -93,6 +87,18 @@ const Login = () => {
               </div>
             </div>
 
+            <div>
+              <Label htmlFor="confirm" className="text-muted-foreground">Confirm Password</Label>
+              <Input
+                id="confirm"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="mt-1.5 bg-secondary/50 border-border"
+              />
+            </div>
+
             <motion.button
               type="submit"
               disabled={loading}
@@ -104,29 +110,16 @@ const Login = () => {
                 <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
               ) : (
                 <>
-                  <LogIn className="h-4 w-4" />
-                  Sign In
+                  <KeyRound className="h-4 w-4" />
+                  Update Password
                 </>
               )}
             </motion.button>
           </form>
-
-          <div className="mt-4 text-center">
-            <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              Forgot your password?
-            </Link>
-          </div>
-
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-primary font-semibold hover:underline">
-              Sign Up
-            </Link>
-          </p>
         </div>
       </motion.div>
     </div>
   );
 };
 
-export default Login;
+export default ResetPassword;
