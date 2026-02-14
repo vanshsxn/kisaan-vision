@@ -38,7 +38,7 @@ const HeroSection = () => {
               Kisaan
             </span>
             <span className="text-[12vw] md:text-[6.5rem] lg:text-[8rem] text-[#22C55E]">
-              Visi on
+              Vision
             </span>
           </h1>
 
