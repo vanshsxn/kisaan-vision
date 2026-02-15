@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Chatbot from "./pages/Chatbot";
+import Profile from "./pages/Profile";
 import AuthCallback from "./integrations/lovable/auth-callback";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -43,6 +44,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Chatbot />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

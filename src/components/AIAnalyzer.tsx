@@ -1,10 +1,32 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Upload, Cpu, ScanLine, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const AIAnalyzer = () => {
+  const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const requireAuth = useCallback(() => {
+    if (!user) {
+      navigate("/login");
+      return false;
+    }
+    return true;
+  }, [user, navigate]);
 
   const handleDrag = useCallback((e: React.DragEvent, entering: boolean) => {
     e.preventDefault();
@@ -14,14 +36,21 @@ const AIAnalyzer = () => {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (!requireAuth()) return;
     const file = e.dataTransfer.files[0];
     if (file) setFileName(file.name);
-  }, []);
+  }, [requireAuth]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!requireAuth()) return;
     const file = e.target.files?.[0];
     if (file) setFileName(file.name);
-  }, []);
+  }, [requireAuth]);
+
+  const handleAnalyze = () => {
+    if (!requireAuth()) return;
+    navigate("/chatbot");
+  };
 
   return (
     <section id="ai-lab" className="relative py-32 overflow-hidden">
@@ -70,6 +99,7 @@ const AIAnalyzer = () => {
         >
           {/* Upload Zone */}
           <label
+            onClick={(e) => { if (!requireAuth()) e.preventDefault(); }}
             onDragOver={(e) => handleDrag(e, true)}
             onDragLeave={(e) => handleDrag(e, false)}
             onDrop={handleDrop}
@@ -91,7 +121,6 @@ const AIAnalyzer = () => {
               <div className="rounded-full glass p-5 glow-green-subtle">
                 <Upload className="h-8 w-8 text-primary" />
               </div>
-              {/* Orbiting rings */}
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
@@ -125,6 +154,7 @@ const AIAnalyzer = () => {
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            onClick={handleAnalyze}
             className="mt-6 w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground flex items-center justify-center gap-2 hover:glow-green transition-all"
           >
             <ScanLine className="h-4 w-4" />
