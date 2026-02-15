@@ -1,15 +1,20 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import DripIrrigation from "@/components/DripIrrigation";
+import TechnologySection from "@/components/TechnologySection";
 import AIAnalyzer from "@/components/AIAnalyzer";
+import ContactSection from "@/components/ContactSection";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
       <Navbar />
       <HeroSection />
       <DripIrrigation />
+      <TechnologySection />
       <AIAnalyzer />
+      <ContactSection />
 
       {/* Footer */}
       <footer className="border-t border-border py-12">
@@ -23,6 +28,8 @@ const Index = () => {
           </p>
         </div>
       </footer>
+
+      <MobileBottomNav />
     </div>
   );
 };
