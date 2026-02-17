@@ -12,6 +12,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Chatbot from "./pages/Chatbot";
 import Profile from "./pages/Profile";
+import Dashboard from "./pages/Dashboard";
 import AuthCallback from "./integrations/lovable/auth-callback";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -39,6 +40,14 @@ const AppContent = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/~oauth" element={<AuthCallback />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/chatbot"
           element={
