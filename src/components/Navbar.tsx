@@ -68,6 +68,14 @@ const Navbar = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => navigate("/dashboard")}
+                className="glass glow-green-subtle rounded-full px-5 py-2 text-sm font-semibold text-primary transition-all hover:glow-green"
+              >
+                Dashboard
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/profile")}
                 className="glass rounded-full px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
               >
