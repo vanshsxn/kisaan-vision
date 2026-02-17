@@ -172,7 +172,7 @@ const Signup = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="farmer@kisaanvision.com"
+                placeholder="Enter Your email"
                 className="mt-1.5 bg-secondary/50 border-border"
               />
             </div>
@@ -180,7 +180,7 @@ const Signup = () => {
               <Label htmlFor="password" className="text-muted-foreground">Password</Label>
               <div className="relative mt-1.5">
                 <Input
-                  id="password"
+                  id="Enter Your Password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
