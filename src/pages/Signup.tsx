@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,17 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        setCheckingAuth(false);
+      }
+    });
+  }, [navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +68,14 @@ const Signup = () => {
       toast.error(error.message || `Failed to sign in with ${provider}`);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -107,7 +126,6 @@ const Signup = () => {
           <h2 className="text-2xl font-black text-foreground mb-2">Create Account</h2>
           <p className="text-sm text-muted-foreground mb-6">Join the future of agriculture</p>
 
-          {/* Social Login Buttons */}
           <div className="flex gap-3 mb-6">
             <button
               type="button"
@@ -156,54 +174,23 @@ const Signup = () => {
           <form onSubmit={handleSignup} className="space-y-5">
             <div>
               <Label htmlFor="name" className="text-muted-foreground">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Ravi Kumar"
-                className="mt-1.5 bg-secondary/50 border-border"
-              />
+              <Input id="name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ravi Kumar" className="mt-1.5 bg-secondary/50 border-border" />
             </div>
             <div>
               <Label htmlFor="email" className="text-muted-foreground">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter Your email"
-                className="mt-1.5 bg-secondary/50 border-border"
-              />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter Your email" className="mt-1.5 bg-secondary/50 border-border" />
             </div>
             <div>
               <Label htmlFor="password" className="text-muted-foreground">Password</Label>
               <div className="relative mt-1.5">
-                <Input
-                  id="Enter Your Password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-secondary/50 border-border pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="bg-secondary/50 border-border pr-10" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
-            <motion.button
-              type="submit"
-              disabled={loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground flex items-center justify-center gap-2 hover:glow-green transition-all disabled:opacity-50"
-            >
+            <motion.button type="submit" disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground flex items-center justify-center gap-2 hover:glow-green transition-all disabled:opacity-50">
               {loading ? (
                 <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
               ) : (
@@ -217,9 +204,7 @@ const Signup = () => {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary font-semibold hover:underline">
-              Sign In
-            </Link>
+            <Link to="/login" className="text-primary font-semibold hover:underline">Sign In</Link>
           </p>
         </div>
       </motion.div>
