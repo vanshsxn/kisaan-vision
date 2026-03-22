@@ -4,7 +4,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Send, ImagePlus, X, LogOut, Bot, User, ArrowLeft } from "lucide-react";
+import { Send, ImagePlus, X, LogOut, Bot, User, ArrowLeft, Leaf, Loader2 } from "lucide-react";
+import { classifyImage, imageFromDataUrl, isHealthy, type ClassificationResult } from "@/lib/plantClassifier";
+import { Progress } from "@/components/ui/progress";
 
 interface Message {
   id: string;
