@@ -49,9 +49,9 @@ const ContactSection = () => {
             className="space-y-6"
           >
             {[
-              { icon: Mail, label: "Email", value: "hello@kisaanvision.com" },
-              { icon: Phone, label: "Phone", value: "+91 98765 43210" },
-              { icon: MapPin, label: "Location", value: "New Delhi, India" },
+              { icon: Mail, label: "Email", value: "mvstudiosj@gmail.com" },
+              { icon: Phone, label: "Phone", value: "+91 8273746282" },
+              { icon: MapPin, label: "Location", value: "Dehradun, India" },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-start gap-4">
                 <div className="rounded-xl glass p-3 glow-green-subtle">
