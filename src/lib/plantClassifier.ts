@@ -1,5 +1,4 @@
-import * as tf from "@tensorflow/tfjs";
-import { loadTFLiteModel, TFLiteModel } from "@tensorflow/tfjs-tflite";
+import { ImageClassifier, FilesetResolver } from "@mediapipe/tasks-vision";
 
 export const PLANT_LABELS: Record<number, string> = {
   0: "Apple Scab",
@@ -42,13 +41,24 @@ export const PLANT_LABELS: Record<number, string> = {
   37: "Tomato healthy",
 };
 
-let modelInstance: TFLiteModel | null = null;
+let classifierInstance: ImageClassifier | null = null;
 
-export async function loadModel(): Promise<TFLiteModel> {
-  if (modelInstance) return modelInstance;
-  await tf.ready();
-  modelInstance = await loadTFLiteModel("/models/kisaan_vision_tiny.tflite");
-  return modelInstance;
+async function getClassifier(): Promise<ImageClassifier> {
+  if (classifierInstance) return classifierInstance;
+
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+  );
+
+  classifierInstance = await ImageClassifier.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath: "/models/kisaan_vision_tiny.tflite",
+    },
+    maxResults: 5,
+    runningMode: "IMAGE",
+  });
+
+  return classifierInstance;
 }
 
 export function isHealthy(label: string): boolean {
@@ -64,38 +74,20 @@ export interface ClassificationResult {
 export async function classifyImage(
   imageElement: HTMLImageElement | HTMLCanvasElement
 ): Promise<ClassificationResult> {
-  const model = await loadModel();
+  const classifier = await getClassifier();
+  const result = classifier.classify(imageElement);
 
-  // Preprocess: resize to 224x224, normalize to [0,1]
-  const tensor = tf.tidy(() => {
-    let img = tf.browser.fromPixels(imageElement);
-    img = tf.image.resizeBilinear(img, [224, 224]);
-    // Normalize to [0, 1]
-    const normalized = img.toFloat().div(255.0);
-    // Add batch dimension
-    return normalized.expandDims(0);
-  });
-
-  const output = model.predict(tensor) as tf.Tensor;
-  const probabilities = await output.data();
-  tensor.dispose();
-  output.dispose();
-
-  // Find max
-  let maxIdx = 0;
-  let maxVal = probabilities[0];
-  for (let i = 1; i < probabilities.length; i++) {
-    if (probabilities[i] > maxVal) {
-      maxVal = probabilities[i];
-      maxIdx = i;
-    }
+  if (result.classifications.length > 0 && result.classifications[0].categories.length > 0) {
+    const top = result.classifications[0].categories[0];
+    const idx = top.index;
+    return {
+      label: PLANT_LABELS[idx] ?? top.categoryName ?? `Unknown (${idx})`,
+      confidence: top.score,
+      index: idx,
+    };
   }
 
-  return {
-    label: PLANT_LABELS[maxIdx] ?? `Unknown (${maxIdx})`,
-    confidence: maxVal,
-    index: maxIdx,
-  };
+  return { label: "Unknown", confidence: 0, index: -1 };
 }
 
 export function imageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
