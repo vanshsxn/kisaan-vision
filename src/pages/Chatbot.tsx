@@ -81,19 +81,36 @@ const Chatbot = () => {
     setSelectedImage(null);
     setIsTyping(true);
 
-    // Simulate AI thinking
-    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1500));
-
-    const botMsg: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: selectedImage
-        ? "I can see the crop image you uploaded. In the full version, our AI would analyze it for diseases, nutrient deficiencies, and growth stage. This is a demo — the trained model will be integrated soon! 📸🌿"
-        : getDemoResponse(trimmed),
-    };
-
-    setMessages((prev) => [...prev, botMsg]);
-    setIsTyping(false);
+    if (selectedImage) {
+      // Run TFLite inference on the uploaded image
+      try {
+        const img = await imageFromDataUrl(selectedImage);
+        const res = await classifyImage(img);
+        const healthy = isHealthy(res.label);
+        const pct = Math.round(res.confidence * 100);
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `🔬 **AI Scan Complete**\n\n**Diagnosis:** ${res.label}\n**Confidence:** ${pct}%\n**Status:** ${healthy ? "✅ Healthy" : "⚠️ Disease Detected"}\n\n${healthy ? "Your crop looks great! Keep up the good practices." : "Consider consulting an agronomist or applying appropriate treatment."}`,
+        };
+        setMessages((prev) => [...prev, botMsg]);
+      } catch (err) {
+        console.error(err);
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "Sorry, I couldn't analyze the image. Please try again with a clear photo of a crop leaf.",
+        };
+        setMessages((prev) => [...prev, botMsg]);
+      }
+    } else {
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: getDemoResponse(trimmed),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    }
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
