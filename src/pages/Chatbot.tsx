@@ -111,6 +111,7 @@ const Chatbot = () => {
       };
       setMessages((prev) => [...prev, botMsg]);
     }
+    setIsTyping(false);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
