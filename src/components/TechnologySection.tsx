@@ -1,76 +1,11 @@
 import { motion } from "framer-motion";
-import { 
-  Droplets, Fish, Wind, MapPin, Sun, Plane, 
-  Thermometer, Building2, Shovel, Cpu 
-} from "lucide-react";
-
-const technologies = [
-  {
-    icon: Droplets,
-    title: "Hydroponics",
-    subtitle: "Soil-less Farming",
-    description: "Growing plants in a nutrient-rich water solution instead of soil. It uses 90% less water and allows you to grow crops vertically in small spaces or indoor \"Plant Factories.\"",
-    emoji: "💧",
-  },
-  {
-    icon: Fish,
-    title: "Aquaponics",
-    subtitle: "The Fish & Plant Loop",
-    description: "A circular ecosystem where you raise fish in tanks. The waste from the fish provides natural fertilizer for the plants, and the plants clean the water for the fish. It's a 100% organic, closed-loop system.",
-    emoji: "🐟",
-  },
-  {
-    icon: Wind,
-    title: "Aeroponics",
-    subtitle: "Misting the Roots",
-    description: "Plants are suspended in the air, and their roots are sprayed with a high-nutrient mist. This allows plants to absorb more oxygen, making them grow significantly faster.",
-    emoji: "🌬️",
-  },
-  {
-    icon: MapPin,
-    title: "Variable Rate Application",
-    subtitle: "VRA",
-    description: "Using GPS and AI, tractors apply different amounts of fertilizer or seeds to different parts of a field. If one area is healthy, the machine uses less; if struggling, it uses more.",
-    emoji: "📍",
-  },
-  {
-    icon: Sun,
-    title: "Agrivoltaics",
-    subtitle: "Farming + Solar",
-    description: "Installing solar panels high above the crops. The panels generate electricity while providing partial shade, reducing evaporation and protecting crops from heat stress.",
-    emoji: "☀️",
-  },
-  {
-    icon: Plane,
-    title: "Drone-Assisted Farming",
-    subtitle: "Seeding & Spraying",
-    description: "Drones fly over large fields to bombard the soil with seed pods or spray fertilizer only on specific unhealthy spots detected by AI, covering hectares in minutes.",
-    emoji: "🛩️",
-  },
-  {
-    icon: Thermometer,
-    title: "Greenhouse Automation",
-    subtitle: "AI Climate Control",
-    description: "Using AI to control the climate inside a greenhouse. Motorized vents, fans, and LED grow lights automatically adjust based on weather to maintain the perfect growing season year-round.",
-    emoji: "🌡️",
-  },
-  {
-    icon: Building2,
-    title: "Vertical Farming",
-    subtitle: "Skyscraper Farms",
-    description: "Growing crops in stacked layers. Essential for urban farming near cities, reducing food travel distance (lowering carbon footprint) and maximizing every square inch of land.",
-    emoji: "🏢",
-  },
-  {
-    icon: Shovel,
-    title: "Regenerative No-Till",
-    subtitle: "Farming",
-    description: "Using specialized machines to plant seeds without plowing. This keeps the soil's natural microbiome healthy, traps carbon in the ground, and prevents soil erosion.",
-    emoji: "🌱",
-  },
-];
+import { useNavigate } from "react-router-dom";
+import { Cpu } from "lucide-react";
+import { farmingMethods } from "@/data/farmingMethods";
 
 const TechnologySection = () => {
+  const navigate = useNavigate();
+
   return (
     <section id="technology" className="relative py-32 overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-primary/3 blur-[150px] pointer-events-none" />
@@ -109,15 +44,16 @@ const TechnologySection = () => {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {technologies.map((tech, i) => (
+          {farmingMethods.map((tech, i) => (
             <motion.div
-              key={tech.title}
+              key={tech.slug}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
               whileHover={{ y: -6, transition: { duration: 0.3 } }}
-              className="glass rounded-2xl p-6 hover:glow-border transition-all duration-500 group relative overflow-hidden"
+              onClick={() => navigate(`/farming-methods/${tech.slug}`)}
+              className="glass rounded-2xl p-6 hover:glow-border transition-all duration-500 group relative overflow-hidden cursor-pointer"
             >
               {/* Background emoji */}
               <span className="absolute top-3 right-3 text-4xl opacity-10 group-hover:opacity-20 transition-opacity duration-500 select-none pointer-events-none">
@@ -134,7 +70,11 @@ const TechnologySection = () => {
               <p className="text-xs font-semibold text-primary mb-3">{tech.subtitle}</p>
               <p className="text-sm text-muted-foreground leading-relaxed">{tech.description}</p>
 
-              {/* Bottom glow line on hover */}
+              {/* Explore indicator */}
+              <div className="mt-4 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                Explore →
+              </div>
+
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </motion.div>
           ))}

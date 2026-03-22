@@ -1,12 +1,11 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import dripImage from "@/assets/drip-irrigation.jpg";
-import { Droplets, Gauge, Leaf } from "lucide-react";
+import { ScanLine, Crosshair, Layers, Timer } from "lucide-react";
 
 const stats = [
-  { icon: Droplets, value: "40%", label: "Water Saved", delay: 0.1 },
-  { icon: Gauge, value: "3x", label: "Yield Increase", delay: 0.2 },
-  { icon: Leaf, value: "98%", label: "Efficiency Rate", delay: 0.3 },
+  { icon: ScanLine, value: "96.7%", label: "Accuracy Rate", delay: 0.1 },
+  { icon: Layers, value: "38", label: "Crop Categories", delay: 0.2 },
+  { icon: Timer, value: "<1s", label: "Inference Time", delay: 0.3 },
 ];
 
 const DripIrrigation = () => {
@@ -25,12 +24,19 @@ const DripIrrigation = () => {
           {/* Parallax Image */}
           <div className="relative h-[500px] rounded-2xl overflow-hidden glow-border">
             <motion.img
-              src={dripImage}
-              alt="Precision Drip Irrigation"
+              src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1200&q=80"
+              alt="Kisaan Vision AI Scan"
               style={{ y: imageY }}
               className="absolute inset-0 w-full h-[130%] object-cover -top-[15%]"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+            
+            {/* Scanning overlay effect */}
+            <motion.div
+              animate={{ y: ["0%", "100%", "0%"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+              className="absolute left-0 right-0 h-0.5 bg-primary/60 shadow-[0_0_20px_hsl(var(--primary)/0.5)]"
+            />
           </div>
 
           {/* Content */}
@@ -42,7 +48,7 @@ const DripIrrigation = () => {
               transition={{ duration: 0.6 }}
               className="text-sm font-semibold uppercase tracking-[0.3em] text-primary mb-4"
             >
-              Smart Irrigation
+              AI-Powered Diagnostics
             </motion.p>
 
             <motion.h2
@@ -52,10 +58,20 @@ const DripIrrigation = () => {
               transition={{ duration: 0.7, delay: 0.1 }}
               className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-6"
             >
-              Precision Drip
+              Kisaan Vision
               <br />
-              <span className="text-gradient-green">Irrigation</span>
+              <span className="text-gradient-green">AI Scan</span>
             </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="text-xs font-semibold uppercase tracking-wider text-primary/70 mb-4"
+            >
+              Real-time Pathogen Detection
+            </motion.p>
 
             <motion.p
               initial={{ opacity: 0, x: 30 }}
@@ -64,9 +80,7 @@ const DripIrrigation = () => {
               transition={{ duration: 0.7, delay: 0.2 }}
               className="text-muted-foreground text-lg leading-relaxed mb-10"
             >
-              Our sensor-driven drip system delivers water directly to root zones with
-              millimeter precision, reducing waste and maximizing crop health through
-              real-time soil moisture analytics.
+              Powered by a custom-trained Convolutional Neural Network (CNN), our vision system identifies 38 different crop diseases from a single leaf photo. By utilizing Edge AI, the scanning process happens instantly on the farmer's device, providing immediate remedies for blight, rust, and viral infections.
             </motion.p>
 
             {/* Stats */}

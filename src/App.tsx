@@ -13,6 +13,8 @@ import ResetPassword from "./pages/ResetPassword";
 import Chatbot from "./pages/Chatbot";
 import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
+import FarmingMethodDetail from "./pages/FarmingMethodDetail";
+import VRExperience from "./pages/VRExperience";
 import AuthCallback from "./integrations/lovable/auth-callback";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -40,6 +42,8 @@ const AppContent = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/~oauth" element={<AuthCallback />} />
+        <Route path="/farming-methods/:slug" element={<FarmingMethodDetail />} />
+        <Route path="/vr-experience/:practiceType" element={<VRExperience />} />
         <Route
           path="/dashboard"
           element={
