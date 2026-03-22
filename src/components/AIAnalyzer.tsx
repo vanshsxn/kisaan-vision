@@ -65,8 +65,6 @@ const AIAnalyzer = () => {
   const handleAnalyze = async () => {
     if (!requireAuth()) return;
     if (!imageDataUrl) {
-      // No image selected — go to chatbot
-      navigate("/chatbot");
       return;
     }
     setIsAnalyzing(true);
