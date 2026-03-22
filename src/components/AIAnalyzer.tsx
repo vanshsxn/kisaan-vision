@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Cpu, ScanLine, Sparkles, Leaf, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
+import { 
+  Upload, Cpu, Leaf, ShieldCheck, ShieldAlert, 
+  Loader2, Sparkles, Activity, ArrowRight, RotateCcw 
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { classifyImage, imageFromDataUrl, isHealthy, type ClassificationResult } from "@/lib/plantClassifier";
@@ -43,39 +46,23 @@ const AIAnalyzer = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleDrag = useCallback((e: React.DragEvent, entering: boolean) => {
-    e.preventDefault();
-    setIsDragging(entering);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (!requireAuth()) return;
-    const file = e.dataTransfer.files[0];
-    if (file) readFile(file);
-  }, [requireAuth]);
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!requireAuth()) return;
-    const file = e.target.files?.[0];
-    if (file) readFile(file);
-  }, [requireAuth]);
-
   const handleAnalyze = async () => {
-    if (!requireAuth()) return;
-    if (!imageDataUrl) {
-      return;
-    }
+    if (!requireAuth() || !imageDataUrl) return;
+    
     setIsAnalyzing(true);
     setResult(null);
+
     try {
       const img = await imageFromDataUrl(imageDataUrl);
       const res = await classifyImage(img);
-      setResult(res);
+      
+      // Artificial delay to make the "Scanning" animation feel real
+      setTimeout(() => {
+        setResult(res);
+        setIsAnalyzing(false);
+      }, 1500);
     } catch (err) {
       console.error("Classification error:", err);
-    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -84,204 +71,145 @@ const AIAnalyzer = () => {
   const confidencePct = result ? Math.round(result.confidence * 100) : 0;
 
   return (
-    <section id="ai-lab" className="relative py-32 overflow-hidden">
+    <section id="ai-lab" className="relative py-24 overflow-hidden bg-[#030711]">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-xs font-semibold text-primary mb-6"
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="text-center mb-12">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-4"
           >
-            <Cpu className="h-3.5 w-3.5" />
-            AI-Powered
+            <Activity className="h-3 w-3" /> NEURAL ENGINE ACTIVE
           </motion.div>
-
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4"
-          >
-            AI Crop <span className="text-gradient-green">Analyzer</span>
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground text-lg max-w-md mx-auto"
-          >
-            Upload a photo of your crop leaf and let our AI detect diseases, deficiencies, and health status.
-          </motion.p>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-white mb-4">
+            CROP <span className="text-emerald-500">DIAGNOSTICS</span>
+          </h2>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="max-w-xl mx-auto"
-        >
-          {/* Upload Zone */}
-          <label
-            onClick={(e) => { if (!requireAuth()) e.preventDefault(); }}
-            onDragOver={(e) => handleDrag(e, true)}
-            onDragLeave={(e) => handleDrag(e, false)}
-            onDrop={handleDrop}
-            className={`relative flex flex-col items-center justify-center rounded-2xl p-12 cursor-pointer transition-all duration-500 ${
-              isDragging ? "upload-zone-glow scale-[1.02]" : "upload-zone-glow"
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="sr-only"
+        <div className="max-w-2xl mx-auto">
+          {/* Upload & Preview Area */}
+          <div className={`relative group rounded-3xl border-2 border-dashed transition-all duration-500 overflow-hidden ${
+            imageDataUrl ? "border-primary/50" : "border-white/10 hover:border-primary/30"
+          }`}>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleFileSelect} 
             />
-
-            {imageDataUrl ? (
-              <div className="text-center">
-                <img
-                  src={imageDataUrl}
-                  alt="Preview"
-                  className="h-40 w-40 object-cover rounded-xl mx-auto mb-4 border-2 border-primary/20"
-                />
-                <p className="text-sm font-semibold text-foreground">{fileName}</p>
-                <p className="text-xs text-primary mt-1">Ready for analysis</p>
-              </div>
-            ) : (
-              <>
-                <motion.div
-                  animate={isDragging ? { scale: 1.1 } : { scale: 1 }}
-                  className="relative mb-6"
-                >
-                  <div className="rounded-full glass p-5 glow-green-subtle">
-                    <Upload className="h-8 w-8 text-primary" />
-                  </div>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-[-12px] rounded-full border border-primary/10"
-                  />
-                  <motion.div
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-[-24px] rounded-full border border-primary/5"
-                  />
-                </motion.div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-foreground">
-                    Drop your crop image here
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    or click to browse • PNG, JPG up to 10MB
-                  </p>
+            
+            {!imageDataUrl ? (
+              <label 
+                onClick={() => !user && navigate("/login")}
+                className="flex flex-col items-center justify-center p-20 cursor-pointer"
+              >
+                <div className="p-5 rounded-full bg-white/5 mb-4 group-hover:scale-110 transition-transform">
+                  <Upload className="text-primary h-10 w-10" />
                 </div>
-              </>
-            )}
-          </label>
+                <p className="text-white font-bold">Upload Leaf Photo</p>
+                <p className="text-gray-500 text-sm">Drag and drop or click to browse</p>
+              </label>
+            ) : (
+              <div className="relative aspect-video w-full bg-black flex items-center justify-center">
+                <img src={imageDataUrl} alt="Preview" className="h-full w-full object-cover opacity-60" />
+                
+                {/* Scanning Overlay Animation */}
+                {isAnalyzing && (
+                  <motion.div 
+                    initial={{ top: "0%" }}
+                    animate={{ top: "100%" }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                    className="absolute left-0 w-full h-1 bg-primary shadow-[0_0_15px_rgba(16,185,129,1)] z-20"
+                  />
+                )}
 
-          {/* Action Buttons */}
-          <div className="mt-6 flex gap-3">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="flex-1 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground flex items-center justify-center gap-2 hover:glow-green transition-all disabled:opacity-60"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Analyzing…
-                </>
-              ) : (
-                <>
-                  <Leaf className="h-4 w-4" />
-                  Scan Leaf
-                </>
-              )}
-            </motion.button>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                   {isAnalyzing ? (
+                     <div className="flex flex-col items-center gap-3">
+                       <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                       <span className="text-primary font-black tracking-widest animate-pulse">ANALYZING DNA PATHOGENS...</span>
+                     </div>
+                   ) : !result && (
+                     <button 
+                       onClick={handleAnalyze}
+                       className="bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:scale-105 transition-all"
+                     >
+                       <ScanLine /> START SCAN NOW
+                     </button>
+                   )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Result Card */}
+          {/* Result Card Section */}
           <AnimatePresence>
             {result && (
               <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ type: "spring", duration: 0.5 }}
-                className={`mt-8 rounded-2xl border p-6 ${
-                  healthy
-                    ? "border-primary/30 bg-primary/5"
-                    : "border-destructive/30 bg-destructive/5"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`mt-8 rounded-[2.5rem] overflow-hidden border-2 shadow-2xl transition-colors ${
+                  healthy ? "border-emerald-500/40 bg-emerald-950/20" : "border-rose-500/40 bg-rose-950/20"
                 }`}
               >
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`rounded-full p-3 ${
-                      healthy ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
-                    }`}
-                  >
-                    {healthy ? (
-                      <ShieldCheck className="h-6 w-6" />
-                    ) : (
-                      <ShieldAlert className="h-6 w-6" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                      Diagnosis
-                    </p>
-                    <h3 className="text-xl font-black text-foreground mb-1">
-                      {result.label}
-                    </h3>
-                    <p className={`text-sm font-semibold mb-4 ${healthy ? "text-primary" : "text-destructive"}`}>
-                      {healthy ? "Your crop looks healthy! ✅" : "Disease detected — take action ⚠️"}
-                    </p>
+                <div className={`py-3 text-center text-[10px] font-black uppercase tracking-[0.3em] ${
+                  healthy ? "bg-emerald-500 text-black" : "bg-rose-500 text-white"
+                }`}>
+                  Neural Diagnostic Complete
+                </div>
 
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs font-medium">
-                        <span className="text-muted-foreground">Confidence</span>
-                        <span className="text-foreground">{confidencePct}%</span>
-                      </div>
-                      <Progress
-                        value={confidencePct}
-                        className={`h-2 ${healthy ? "" : "[&>div]:bg-destructive"}`}
-                      />
+                <div className="p-10 flex flex-col items-center text-center">
+                  <div className={`mb-6 p-5 rounded-full ${healthy ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}>
+                    {healthy ? <ShieldCheck size={56} strokeWidth={1.5} /> : <ShieldAlert size={56} strokeWidth={1.5} />}
+                  </div>
+
+                  <h3 className="text-4xl font-black text-white mb-2">{result.label}</h3>
+                  <div className="flex items-center gap-2 mb-8">
+                    <span className="text-gray-400 text-sm uppercase font-bold tracking-widest">Confidence Index:</span>
+                    <span className={`text-sm font-black ${healthy ? 'text-emerald-400' : 'text-rose-400'}`}>{confidencePct}%</span>
+                  </div>
+
+                  {/* High-Contrast Progress Bar */}
+                  <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden mb-10 border border-white/10">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${confidencePct}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className={`h-full shadow-[0_0_20px_rgba(255,255,255,0.2)] ${healthy ? "bg-emerald-500" : "bg-rose-500"}`}
+                    />
+                  </div>
+
+                  {/* Recommendation Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                    <div className="bg-white/5 p-5 rounded-3xl border border-white/5 text-left">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Biological Status</p>
+                      <p className={`text-lg font-black ${healthy ? "text-emerald-400" : "text-rose-400"}`}>
+                        {healthy ? "OPTIMAL HEALTH" : "CRITICAL ALERT"}
+                      </p>
+                    </div>
+                    <div className="bg-white/5 p-5 rounded-3xl border border-white/5 text-left">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Immediate Action</p>
+                      <p className="text-white text-sm font-medium leading-tight">
+                        {healthy ? "No treatment required. Maintain hydration." : "Isolate crop and apply targeted fungicide."}
+                      </p>
                     </div>
                   </div>
+
+                  <button 
+                    onClick={() => { setImageDataUrl(null); setResult(null); }}
+                    className="mt-10 flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
+                  >
+                    <RotateCcw size={16} /> Run New Analysis
+                  </button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Feature pills */}
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {["Disease Detection", "Growth Stage", "Nutrient Analysis", "Pest Identification"].map(
-              (feature, i) => (
-                <motion.span
-                  key={feature}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.4 + i * 0.1 }}
-                  className="glass rounded-full px-4 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1.5"
-                >
-                  <Sparkles className="h-3 w-3 text-primary animate-pulse-glow" />
-                  {feature}
-                </motion.span>
-              )
-            )}
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
