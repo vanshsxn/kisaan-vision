@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Upload, Cpu, Leaf, ShieldCheck, ShieldAlert, 
-  Loader2, Sparkles, Activity, ArrowRight, RotateCcw 
+  Loader2, Sparkles, Activity, ArrowRight, RotateCcw,
+  ScanLine // Added missing icon import
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,13 +38,19 @@ const AIAnalyzer = () => {
     return true;
   }, [user, navigate]);
 
-  const readFile = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    setFileName(file.name);
-    setResult(null);
-    const reader = new FileReader();
-    reader.onload = () => setImageDataUrl(reader.result as string);
-    reader.readAsDataURL(file);
+  // --- FIXED: Added handleFileSelect ---
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (typeof e.target?.result === 'string') {
+          setImageDataUrl(e.target.result);
+          setResult(null); // Clear previous result when new image is picked
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -89,7 +96,6 @@ const AIAnalyzer = () => {
         </div>
 
         <div className="max-w-2xl mx-auto">
-          {/* Upload & Preview Area */}
           <div className={`relative group rounded-3xl border-2 border-dashed transition-all duration-500 overflow-hidden ${
             imageDataUrl ? "border-primary/50" : "border-white/10 hover:border-primary/30"
           }`}>
@@ -116,7 +122,6 @@ const AIAnalyzer = () => {
               <div className="relative aspect-video w-full bg-black flex items-center justify-center">
                 <img src={imageDataUrl} alt="Preview" className="h-full w-full object-cover opacity-60" />
                 
-                {/* Scanning Overlay Animation */}
                 {isAnalyzing && (
                   <motion.div 
                     initial={{ top: "0%" }}
@@ -145,7 +150,6 @@ const AIAnalyzer = () => {
             )}
           </div>
 
-          {/* Result Card Section */}
           <AnimatePresence>
             {result && (
               <motion.div
@@ -173,7 +177,6 @@ const AIAnalyzer = () => {
                     <span className={`text-sm font-black ${healthy ? 'text-emerald-400' : 'text-rose-400'}`}>{confidencePct}%</span>
                   </div>
 
-                  {/* High-Contrast Progress Bar */}
                   <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden mb-10 border border-white/10">
                     <motion.div 
                       initial={{ width: 0 }}
@@ -183,7 +186,6 @@ const AIAnalyzer = () => {
                     />
                   </div>
 
-                  {/* Recommendation Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                     <div className="bg-white/5 p-5 rounded-3xl border border-white/5 text-left">
                       <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Biological Status</p>
