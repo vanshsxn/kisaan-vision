@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import FarmingMethodDetail from "./pages/FarmingMethodDetail";
 import VRExperience from "./pages/VRExperience";
+import VRField from "./pages/VRField";
 import AuthCallback from "./integrations/lovable/auth-callback";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
