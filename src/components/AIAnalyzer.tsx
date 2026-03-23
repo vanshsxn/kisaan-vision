@@ -1,13 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Cpu, ScanLine, Sparkles, Leaf, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
+import { Upload, Cpu, Sparkles, Leaf, ShieldCheck, ShieldAlert, Loader2, FileDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { classifyImage, imageFromDataUrl, isHealthy, type ClassificationResult } from "@/lib/plantClassifier";
+import { generateScanReport } from "@/lib/generateReport";
 import { Progress } from "@/components/ui/progress";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const AIAnalyzer = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
@@ -64,9 +67,7 @@ const AIAnalyzer = () => {
 
   const handleAnalyze = async () => {
     if (!requireAuth()) return;
-    if (!imageDataUrl) {
-      return;
-    }
+    if (!imageDataUrl) return;
     setIsAnalyzing(true);
     setResult(null);
     try {
@@ -80,8 +81,16 @@ const AIAnalyzer = () => {
     }
   };
 
+  const handleDownloadReport = () => {
+    if (result) {
+      generateScanReport(result, imageDataUrl);
+    }
+  };
+
   const healthy = result ? isHealthy(result.label) : false;
   const confidencePct = result ? Math.round(result.confidence * 100) : 0;
+
+  const featureKeys = ["diseaseDetection", "growthStage", "nutrientAnalysis", "pestIdentification"];
 
   return (
     <section id="ai-lab" className="relative py-32 overflow-hidden">
@@ -96,7 +105,7 @@ const AIAnalyzer = () => {
             className="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-xs font-semibold text-primary mb-6"
           >
             <Cpu className="h-3.5 w-3.5" />
-            AI-Powered
+            {t("aiPowered")}
           </motion.div>
 
           <motion.h2
@@ -106,7 +115,7 @@ const AIAnalyzer = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4"
           >
-            AI Crop <span className="text-gradient-green">Analyzer</span>
+            {t("aiCropAnalyzer")} <span className="text-gradient-green">{t("analyzer")}</span>
           </motion.h2>
 
           <motion.p
@@ -116,7 +125,7 @@ const AIAnalyzer = () => {
             transition={{ delay: 0.2 }}
             className="text-muted-foreground text-lg max-w-md mx-auto"
           >
-            Upload a photo of your crop leaf and let our AI detect diseases, deficiencies, and health status.
+            {t("uploadPrompt")}
           </motion.p>
         </div>
 
@@ -153,7 +162,7 @@ const AIAnalyzer = () => {
                   className="h-40 w-40 object-cover rounded-xl mx-auto mb-4 border-2 border-primary/20"
                 />
                 <p className="text-sm font-semibold text-foreground">{fileName}</p>
-                <p className="text-xs text-primary mt-1">Ready for analysis</p>
+                <p className="text-xs text-primary mt-1">{t("readyForAnalysis")}</p>
               </div>
             ) : (
               <>
@@ -176,12 +185,8 @@ const AIAnalyzer = () => {
                   />
                 </motion.div>
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-foreground">
-                    Drop your crop image here
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    or click to browse • PNG, JPG up to 10MB
-                  </p>
+                  <p className="text-sm font-semibold text-foreground">{t("dropImage")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("orBrowse")}</p>
                 </div>
               </>
             )}
@@ -199,12 +204,12 @@ const AIAnalyzer = () => {
               {isAnalyzing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Analyzing…
+                  {t("analyzing")}
                 </>
               ) : (
                 <>
                   <Leaf className="h-4 w-4" />
-                  Scan Leaf
+                  {t("scanLeaf")}
                 </>
               )}
             </motion.button>
@@ -230,26 +235,20 @@ const AIAnalyzer = () => {
                       healthy ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
                     }`}
                   >
-                    {healthy ? (
-                      <ShieldCheck className="h-6 w-6" />
-                    ) : (
-                      <ShieldAlert className="h-6 w-6" />
-                    )}
+                    {healthy ? <ShieldCheck className="h-6 w-6" /> : <ShieldAlert className="h-6 w-6" />}
                   </div>
                   <div className="flex-1">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                      Diagnosis
+                      {t("diagnosis")}
                     </p>
-                    <h3 className="text-xl font-black text-foreground mb-1">
-                      {result.label}
-                    </h3>
+                    <h3 className="text-xl font-black text-foreground mb-1">{result.label}</h3>
                     <p className={`text-sm font-semibold mb-4 ${healthy ? "text-primary" : "text-destructive"}`}>
-                      {healthy ? "Your crop looks healthy! ✅" : "Disease detected — take action ⚠️"}
+                      {healthy ? t("healthyMsg") : t("diseaseMsg")}
                     </p>
 
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs font-medium">
-                        <span className="text-muted-foreground">Confidence</span>
+                        <span className="text-muted-foreground">{t("confidence")}</span>
                         <span className="text-foreground">{confidencePct}%</span>
                       </div>
                       <Progress
@@ -257,6 +256,17 @@ const AIAnalyzer = () => {
                         className={`h-2 ${healthy ? "" : "[&>div]:bg-destructive"}`}
                       />
                     </div>
+
+                    {/* Download Report Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handleDownloadReport}
+                      className="mt-4 w-full rounded-xl glass glow-green-subtle py-3 text-sm font-bold text-primary flex items-center justify-center gap-2 hover:glow-green transition-all"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      {t("downloadReport")}
+                    </motion.button>
                   </div>
                 </div>
               </motion.div>
@@ -265,21 +275,19 @@ const AIAnalyzer = () => {
 
           {/* Feature pills */}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {["Disease Detection", "Growth Stage", "Nutrient Analysis", "Pest Identification"].map(
-              (feature, i) => (
-                <motion.span
-                  key={feature}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.4 + i * 0.1 }}
-                  className="glass rounded-full px-4 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1.5"
-                >
-                  <Sparkles className="h-3 w-3 text-primary animate-pulse-glow" />
-                  {feature}
-                </motion.span>
-              )
-            )}
+            {featureKeys.map((key, i) => (
+              <motion.span
+                key={key}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 + i * 0.1 }}
+                className="glass rounded-full px-4 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1.5"
+              >
+                <Sparkles className="h-3 w-3 text-primary animate-pulse-glow" />
+                {t(key)}
+              </motion.span>
+            ))}
           </div>
         </motion.div>
       </div>

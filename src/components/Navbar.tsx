@@ -2,21 +2,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, ChevronDown, LayoutDashboard, LogOut } from "lucide-react";
-
-const navItems = [
-  { label: "Solutions", id: "solutions" },
-  { label: "Technology", id: "technology" },
-  { label: "AI Lab", id: "ai-lab" },
-  { label: "Contact", id: "contact" },
-];
+import { User, ChevronDown, LayoutDashboard, LogOut, Globe } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, toggleLang, lang } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const navItems = [
+    { label: t("solutions"), id: "solutions" },
+    { label: t("technology"), id: "technology" },
+    { label: t("aiLab"), id: "ai-lab" },
+    { label: t("contact"), id: "contact" },
+  ];
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -75,6 +77,17 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Language Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleLang}
+            className="glass rounded-full px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            {t("language")}
+          </motion.button>
+
           {user ? (
             <div className="relative" ref={dropdownRef}>
               <motion.button
@@ -84,7 +97,7 @@ const Navbar = () => {
                 className="glass glow-green-subtle rounded-full px-4 py-2 text-sm font-semibold text-primary transition-all hover:glow-green flex items-center gap-2"
               >
                 <User className="h-4 w-4" />
-                Profile
+                {t("profile")}
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
               </motion.button>
 
@@ -102,14 +115,14 @@ const Navbar = () => {
                       className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                     >
                       <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
+                      {t("dashboard")}
                     </button>
                     <button
                       onClick={() => { setDropdownOpen(false); navigate("/profile"); }}
                       className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                     >
                       <User className="h-4 w-4" />
-                      My Profile
+                      {t("myProfile")}
                     </button>
                     <div className="border-t border-border" />
                     <button
@@ -117,7 +130,7 @@ const Navbar = () => {
                       className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
-                      Logout
+                      {t("logout")}
                     </button>
                   </motion.div>
                 )}
@@ -130,7 +143,7 @@ const Navbar = () => {
               onClick={() => navigate("/signup")}
               className="glass glow-green-subtle rounded-full px-5 py-2 text-sm font-semibold text-primary transition-all hover:glow-green"
             >
-              Get Started
+              {t("getStarted")}
             </motion.button>
           )}
         </div>
