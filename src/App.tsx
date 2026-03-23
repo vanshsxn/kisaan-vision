@@ -45,6 +45,7 @@ const AppContent = () => {
         <Route path="/~oauth" element={<AuthCallback />} />
         <Route path="/farming-methods/:slug" element={<FarmingMethodDetail />} />
         <Route path="/vr-experience/:practiceType" element={<VRExperience />} />
+        <Route path="/vr-field" element={<VRField />} />
         <Route
           path="/dashboard"
           element={
