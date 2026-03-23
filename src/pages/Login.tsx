@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -21,7 +20,7 @@ const Login = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        navigate("/dashboard", { replace: true });
+        navigate("/", { replace: true });
       } else {
         setCheckingAuth(false);
       }
@@ -35,21 +34,31 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ 
+      email: email.trim(), 
+      password 
+    });
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("Welcome back!");
-      navigate("/dashboard");
+      navigate("/");
     }
   };
 
   const handleSocialLogin = async (provider: "google" | "apple") => {
     setSocialLoading(provider);
-    const { error } = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+    
+    // FIX: Using direct supabase.auth for production on Render
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: {
+        // This ensures the user returns to your live site after auth
+        redirectTo: `${window.location.origin}/auth/v1/callback`,
+      },
     });
+
     setSocialLoading(null);
     if (error) {
       toast.error(error.message || `Failed to sign in with ${provider}`);
@@ -86,7 +95,7 @@ const Login = () => {
           <AnimatedLogo />
         </Link>
 
-        <div className="glass rounded-2xl p-8 glow-border">
+        <div className="glass rounded-2xl p-8 glow-border bg-card/50 backdrop-blur-xl border border-white/10">
           <h2 className="text-2xl font-black text-foreground mb-2">Welcome Back</h2>
           <p className="text-sm text-muted-foreground mb-6">Sign in to access your dashboard</p>
 
@@ -109,21 +118,6 @@ const Login = () => {
               )}
               Google
             </button>
-            <button
-              type="button"
-              onClick={() => handleSocialLogin("apple")}
-              disabled={!!socialLoading}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/50 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
-            >
-              {socialLoading === "apple" ? (
-                <div className="h-4 w-4 rounded-full border-2 border-foreground border-t-transparent animate-spin" />
-              ) : (
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                </svg>
-              )}
-              Apple
-            </button>
           </div>
 
           <div className="relative mb-6">
@@ -131,25 +125,25 @@ const Login = () => {
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-3 text-muted-foreground">or continue with email</span>
+              <span className="bg-card px-3 text-muted-foreground uppercase tracking-widest">or email</span>
             </div>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground text-xs uppercase font-bold">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="farmer@kisaanvision.com"
-                className="mt-1.5 bg-secondary/50 border-border"
+                className="mt-1.5 bg-secondary/30 border-white/5 h-12 focus:ring-primary"
               />
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-muted-foreground text-xs uppercase font-bold">Password</Label>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
@@ -157,7 +151,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="bg-secondary/50 border-border pr-10"
+                  className="bg-secondary/30 border-white/5 h-12 pr-10 focus:ring-primary"
                 />
                 <button
                   type="button"
@@ -174,29 +168,23 @@ const Login = () => {
               disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground flex items-center justify-center gap-2 hover:glow-green transition-all disabled:opacity-50"
+              className="w-full rounded-xl bg-primary py-4 text-sm font-black text-primary-foreground flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all disabled:opacity-50 uppercase tracking-widest"
             >
               {loading ? (
                 <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
               ) : (
                 <>
                   <LogIn className="h-4 w-4" />
-                  Sign In
+                  Access Dashboard
                 </>
               )}
             </motion.button>
           </form>
 
-          <div className="mt-4 text-center">
-            <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              Forgot your password?
-            </Link>
-          </div>
-
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-8 text-center text-xs text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-primary font-semibold hover:underline">
-              Sign Up
+            <Link to="/signup" className="text-primary font-black hover:underline uppercase tracking-tighter">
+              Create One
             </Link>
           </p>
         </div>
