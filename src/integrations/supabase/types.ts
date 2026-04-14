@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      plant_scans: {
+        Row: {
+          confidence: number
+          created_at: string
+          diagnosis: string
+          id: string
+          image_url: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          diagnosis: string
+          id?: string
+          image_url?: string | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          diagnosis?: string
+          id?: string
+          image_url?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
