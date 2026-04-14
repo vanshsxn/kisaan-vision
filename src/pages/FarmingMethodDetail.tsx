@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { getMethodBySlug } from "@/data/farmingMethods";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import SketchfabEmbed from "@/components/SketchfabEmbed";
 import Navbar from "@/components/Navbar";
 
 const FarmingMethodDetail = () => {
@@ -120,6 +121,21 @@ const FarmingMethodDetail = () => {
             ))}
           </div>
         </div>
+
+        {/* 3D Model Viewer */}
+        {method.sketchfabId && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-2xl font-black text-foreground mb-6">
+              Interactive <span className="text-gradient-green">3D Model</span>
+            </h2>
+            <SketchfabEmbed modelId={method.sketchfabId} title={method.title} />
+          </motion.div>
+        )}
 
         {/* VR Button */}
         <motion.div

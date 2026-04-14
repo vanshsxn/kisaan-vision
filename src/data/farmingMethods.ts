@@ -14,6 +14,7 @@ export interface FarmingMethod {
   deepDescription: string[];
   features: { icon: string; title: string; description: string }[];
   vrDescription: string;
+  sketchfabId?: string;
 }
 
 export const farmingMethods: FarmingMethod[] = [
@@ -36,7 +37,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "🏙️", title: "Urban Friendly", description: "Grow anywhere — indoors, rooftops, containers" },
       { icon: "🌿", title: "No Herbicides", description: "Zero weeds means zero chemical herbicides needed" },
     ],
-    vrDescription: "White PVC pipe structures with glowing blue water channels and LED grow lights illuminating rows of leafy greens."
+    vrDescription: "White PVC pipe structures with glowing blue water channels and LED grow lights illuminating rows of leafy greens.",
+    sketchfabId: "b46083eb0138465fb63945497e471ebb",
   },
   {
     slug: "aquaponics",
@@ -57,7 +59,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "🌱", title: "100% Organic", description: "No synthetic fertilizers or chemicals needed" },
       { icon: "💧", title: "Water Efficient", description: "Uses 90% less water than traditional methods" },
     ],
-    vrDescription: "Fish tanks with animated fish connected to lush grow beds via water channels."
+    vrDescription: "Fish tanks with animated fish connected to lush grow beds via water channels.",
+    sketchfabId: "5f7e0c3d32a24be7b5ebb96566bfca99",
   },
   {
     slug: "aeroponics",
@@ -78,7 +81,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "🧪", title: "NASA-Proven", description: "Researched for space agriculture applications" },
       { icon: "🚫", title: "No Soil Needed", description: "Completely eliminates soil-borne diseases" },
     ],
-    vrDescription: "High-tech indoor lab with misting nozzles spraying fine mist on suspended plant roots under purple LED grow lights."
+    vrDescription: "High-tech indoor lab with misting nozzles spraying fine mist on suspended plant roots under purple LED grow lights.",
+    sketchfabId: "781053ef4b5a4c108e5d51f529e1e1c2",
   },
   {
     slug: "vra",
@@ -99,7 +103,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "💰", title: "20% Cost Savings", description: "Reduce fertilizer and seed waste significantly" },
       { icon: "🌍", title: "Eco-Friendly", description: "Minimizes chemical runoff and pollution" },
     ],
-    vrDescription: "Vast open field with a GPS-equipped tractor and colorful heat map overlay showing nutrient levels across the terrain."
+    vrDescription: "Vast open field with a GPS-equipped tractor and colorful heat map overlay showing nutrient levels across the terrain.",
+    sketchfabId: "8682e38b93f74c689f414a4b49d2c6da",
   },
   {
     slug: "agrivoltaics",
@@ -120,7 +125,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "📈", title: "70% More Productive", description: "Combined land use dramatically increases output" },
       { icon: "💧", title: "Less Evaporation", description: "Shade reduces water loss from soil" },
     ],
-    vrDescription: "Agricultural field with rows of elevated solar panels casting geometric shadow patterns over thriving crops below."
+    vrDescription: "Agricultural field with rows of elevated solar panels casting geometric shadow patterns over thriving crops below.",
+    sketchfabId: "c037c1cf06b34ce9b9ba25249958d6be",
   },
   {
     slug: "drones",
@@ -141,7 +147,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "⚡", title: "Lightning Fast", description: "Cover hundreds of acres in hours, not days" },
       { icon: "🌱", title: "Smart Seeding", description: "Plant 100,000+ seeds daily in any terrain" },
     ],
-    vrDescription: "Aerial view following a drone flying over a lush plantation, spraying targeted areas highlighted in red."
+    vrDescription: "Aerial view following a drone flying over a lush plantation, spraying targeted areas highlighted in red.",
+    sketchfabId: "add8fd8c2c364b1787e13ac9009e788f",
   },
   {
     slug: "greenhouse",
@@ -162,7 +169,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "💧", title: "80% Water Savings", description: "Closed-loop systems minimize water waste" },
       { icon: "🌡️", title: "Perfect Climate", description: "Sensors maintain ideal growing conditions 24/7" },
     ],
-    vrDescription: "Transparent glass dome greenhouse with automated vents, LED light arrays cycling through spectrums, and sensor dashboards."
+    vrDescription: "Transparent glass dome greenhouse with automated vents, LED light arrays cycling through spectrums, and sensor dashboards.",
+    sketchfabId: "75f4b19f15f74936bc5fef5f80aa4b80",
   },
   {
     slug: "vertical-farming",
@@ -183,7 +191,8 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "🚛", title: "Zero Food Miles", description: "Eliminate transportation emissions entirely" },
       { icon: "🔄", title: "365 Days/Year", description: "Continuous production with no seasonal limits" },
     ],
-    vrDescription: "Skyscraper interior with stacked growing layers under purple-pink LED lights, with robotic arms tending to crops."
+    vrDescription: "Skyscraper interior with stacked growing layers under purple-pink LED lights, with robotic arms tending to crops.",
+    sketchfabId: "d4e3f91ddb464e6aac1508991ae71a8d",
   },
   {
     slug: "regenerative-no-till",
@@ -204,7 +213,7 @@ export const farmingMethods: FarmingMethod[] = [
       { icon: "⛽", title: "70% Less Fuel", description: "No heavy plowing equipment needed" },
       { icon: "🛡️", title: "Erosion Prevention", description: "Undisturbed soil resists wind and water erosion" },
     ],
-    vrDescription: "Natural field with thick mulch cover, a specialized no-till seeder moving through, and visible healthy root structures."
+    vrDescription: "Natural field with thick mulch cover, a specialized no-till seeder moving through, and visible healthy root structures.",
   },
 ];
 
