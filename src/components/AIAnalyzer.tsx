@@ -16,7 +16,7 @@ const RECENT_DIAGNOSES = [
     variety: "Tomato Plant identified",
     disease: "Tomato Bhove",
     type: "Fungal Disease",
-    image: "https://images.unsplash.com/photo-1592450865966-70130976a5a8?q=80&w=400",
+    image: "https://i.pinimg.com/1200x/14/d3/f6/14d3f66c056da7953cec3dd0c3e9860e.jpg",
     tips: ["Remove infected leaves and fruits", "Use fungicidal spray", "Improve air circulation around plants"]
   },
   {
@@ -25,16 +25,16 @@ const RECENT_DIAGNOSES = [
     variety: "Chili-Plant Light variety identified",
     disease: "Mosaic Virus",
     type: "Viral Disease",
-    image: "https://images.unsplash.com/photo-1588612198056-4258f12128a3?q=80&w=400",
+    image: "https://i.pinimg.com/1200x/15/e2/7e/15e27e060f9a1ded2b5f2605b394099d.jpg",
     tips: ["Manage insect pests like aphids", "Remove and destroy infected plants", "Plant resistant varieties"]
   }
 ];
 
 const EXAMPLE_PLANTS = [
-  { name: "Rice plant", image: "https://images.unsplash.com/photo-1536633107052-475990264103?w=100&h=100&fit=crop", query: "healthy rice plant leaf" },
-  { name: "Tomato blight", image: "https://images.unsplash.com/photo-1592450865966-70130976a5a8?w=100&h=100&fit=crop", query: "tomato leaf with early blight" },
-  { name: "Mosaic virus", image: "https://images.unsplash.com/photo-1588612198056-4258f12128a3?w=100&h=100&fit=crop", query: "leaf with mosaic virus pattern" },
-  { name: "Cotton plant", image: "https://images.unsplash.com/photo-1615555465910-61405e35d2da?w=100&h=100&fit=crop", query: "healthy cotton plant" },
+  { name: "Rice plant", image: "https://tse3.mm.bing.net/th/id/OIP.2ix1On2l3y-H0EKzLEpqQAHaE8?rs=1&pid=ImgDetMain&o=7&rm=3", query: "healthy rice plant leaf" },
+  { name: "Tomato blight", image: "https://tse3.mm.bing.net/th/id/OIP.o5XZLyg8yfuEPcr1jLCWTwHaHa?rs=1&pid=ImgDetMain&o=7&rm=3", query: "tomato leaf with early blight" },
+  { name: "Mosaic virus", image: "https://www.planetnatural.com/wp-content/uploads/2021/11/Cucumber-Mosaic-Virus.jpg", query: "leaf with mosaic virus pattern" },
+  { name: "Cotton plant", image: "https://cdn.pixabay.com/photo/2019/11/26/12/54/cotton-4654533_1280.jpg", query: "healthy cotton plant" },
 ];
 
 const AIAnalyzer = () => {
