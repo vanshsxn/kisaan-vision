@@ -16,7 +16,7 @@ const RECENT_DIAGNOSES = [
     variety: "Tomato Plant identified",
     disease: "Tomato Bhove",
     type: "Fungal Disease",
-    image: "https://i.pinimg.com/1200x/14/d3/f6/14d3f66c056da7953cec3dd0c3e9860e.jpg",
+    image: "https://www.nature-and-garden.com/wp-content/uploads/sites/4/2018/10/tomato-blight-mildew-disease.jpg",
     tips: ["Remove infected leaves and fruits", "Use fungicidal spray", "Improve air circulation around plants"]
   },
   {
@@ -25,7 +25,7 @@ const RECENT_DIAGNOSES = [
     variety: "Chili-Plant Light variety identified",
     disease: "Mosaic Virus",
     type: "Viral Disease",
-    image: "https://i.pinimg.com/1200x/15/e2/7e/15e27e060f9a1ded2b5f2605b394099d.jpg",
+    image: "https://thumbs.dreamstime.com/b/disease-symptom-chili-virus-yellowish-mosaic-disease-symptom-chili-virus-yellowish-mosaic-plant-disease-259516816.jpg",
     tips: ["Manage insect pests like aphids", "Remove and destroy infected plants", "Plant resistant varieties"]
   }
 ];
