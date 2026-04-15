@@ -8,7 +8,6 @@ const navItems = [
   { label: "Solutions", id: "solutions" },
   { label: "Technology", id: "technology" },
   { label: "AI Lab", id: "ai-lab" },
-  { label: "Contact", id: "contact" },
 ];
 
 const Navbar = () => {
@@ -59,7 +58,7 @@ const Navbar = () => {
       <div className="container mx-auto flex items-center justify-between px-6 py-4">
         <Link to="/" className="select-none leading-none">
           <div className="text-xl font-black tracking-wider text-foreground">KISAAN</div>
-          <div className="text-xl font-black tracking-wider text-gradient-green">VISION</div>
+          <div className="text-xl font-black tracking-wider text-primary">VISION</div>
         </Link>
 
         <div className="flex items-center gap-8">
@@ -81,7 +80,7 @@ const Navbar = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="glass glow-green-subtle rounded-full px-4 py-2 text-sm font-semibold text-primary transition-all hover:glow-green flex items-center gap-2"
+                className="rounded-full bg-primary/10 border border-primary/20 px-4 py-2 text-sm font-semibold text-primary transition-all hover:bg-primary/20 flex items-center gap-2"
               >
                 <User className="h-4 w-4" />
                 Profile
@@ -95,7 +94,7 @@ const Navbar = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-48 glass rounded-xl border border-border shadow-xl overflow-hidden"
+                    className="absolute right-0 mt-2 w-48 bg-card rounded-xl border border-border shadow-xl overflow-hidden"
                   >
                     <button
                       onClick={() => { setDropdownOpen(false); navigate("/dashboard"); }}
@@ -128,7 +127,7 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate("/signup")}
-              className="glass glow-green-subtle rounded-full px-5 py-2 text-sm font-semibold text-primary transition-all hover:glow-green"
+              className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90"
             >
               Get Started
             </motion.button>
