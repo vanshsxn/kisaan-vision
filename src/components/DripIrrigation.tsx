@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ScanLine, Crosshair, Layers, Timer } from "lucide-react";
+import { ScanLine, Layers, Timer } from "lucide-react";
 
 const stats = [
   { icon: ScanLine, value: "96.7%", label: "Accuracy Rate", delay: 0.1 },
@@ -18,20 +18,19 @@ const DripIrrigation = () => {
   const imageY = useTransform(scrollYProgress, [0, 1], ["-15%", "15%"]);
 
   return (
-    <section ref={sectionRef} id="solutions" className="relative py-32 overflow-hidden">
+    <section ref={sectionRef} id="solutions" className="relative py-32 overflow-hidden bg-background">
       <div className="container mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Parallax Image */}
-          <div className="relative h-[500px] rounded-2xl overflow-hidden glow-border">
+          <div className="relative h-[500px] rounded-2xl overflow-hidden border border-border shadow-lg">
             <motion.img
               src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1200&q=80"
               alt="Kisaan Vision AI Scan"
               style={{ y: imageY }}
               className="absolute inset-0 w-full h-[130%] object-cover -top-[15%]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent" />
             
-            {/* Scanning overlay effect */}
             <motion.div
               animate={{ y: ["0%", "100%", "0%"] }}
               transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
@@ -92,7 +91,7 @@ const DripIrrigation = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay }}
-                  className="glass rounded-xl p-4 text-center"
+                  className="rounded-xl bg-card border border-border p-4 text-center shadow-sm"
                 >
                   <Icon className="mx-auto mb-2 h-5 w-5 text-primary" />
                   <div className="text-2xl font-black text-foreground">{value}</div>

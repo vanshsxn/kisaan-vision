@@ -6,48 +6,48 @@
 
 @layer base {
   :root {
-    --background: 150 30% 4%;
-    --foreground: 120 10% 90%;
+    --background: 120 20% 96%;
+    --foreground: 150 10% 15%;
 
-    --card: 150 20% 8%;
-    --card-foreground: 120 10% 90%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 10% 15%;
 
-    --popover: 150 20% 8%;
-    --popover-foreground: 120 10% 90%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 10% 15%;
 
-    --primary: 145 60% 45%;
-    --primary-foreground: 150 30% 4%;
+    --primary: 145 60% 38%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 15% 14%;
-    --secondary-foreground: 120 10% 85%;
+    --secondary: 120 15% 92%;
+    --secondary-foreground: 150 10% 25%;
 
-    --muted: 150 10% 12%;
-    --muted-foreground: 150 8% 50%;
+    --muted: 120 10% 90%;
+    --muted-foreground: 150 8% 45%;
 
-    --accent: 145 70% 50%;
-    --accent-foreground: 150 30% 4%;
+    --accent: 145 70% 42%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 150 12% 16%;
-    --input: 150 12% 16%;
-    --ring: 145 60% 45%;
+    --border: 120 10% 85%;
+    --input: 120 10% 85%;
+    --ring: 145 60% 38%;
 
     --radius: 0.75rem;
 
-    --glass-bg: 150 20% 10% / 0.4;
-    --glass-border: 150 20% 30% / 0.2;
-    --glow-primary: 145 60% 45%;
+    --glass-bg: 120 20% 98% / 0.7;
+    --glass-border: 120 15% 80% / 0.4;
+    --glow-primary: 145 60% 38%;
 
-    --sidebar-background: 150 20% 6%;
-    --sidebar-foreground: 120 10% 90%;
-    --sidebar-primary: 145 60% 45%;
-    --sidebar-primary-foreground: 150 30% 4%;
-    --sidebar-accent: 150 15% 14%;
-    --sidebar-accent-foreground: 120 10% 85%;
-    --sidebar-border: 150 12% 16%;
-    --sidebar-ring: 145 60% 45%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 150 10% 15%;
+    --sidebar-primary: 145 60% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 120 15% 92%;
+    --sidebar-accent-foreground: 150 10% 25%;
+    --sidebar-border: 120 10% 85%;
+    --sidebar-ring: 145 60% 38%;
   }
 }
 
@@ -71,55 +71,55 @@
   }
 
   .glass-strong {
-    background: hsla(150, 20%, 10%, 0.6);
+    background: hsla(0, 0%, 100%, 0.85);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    border: 1px solid hsla(150, 20%, 30%, 0.25);
+    border-bottom: 1px solid hsla(120, 10%, 85%, 0.5);
   }
 
   .glow-green {
-    box-shadow: 0 0 30px hsla(145, 60%, 45%, 0.3), 0 0 60px hsla(145, 60%, 45%, 0.1);
+    box-shadow: 0 0 30px hsla(145, 60%, 38%, 0.2), 0 0 60px hsla(145, 60%, 38%, 0.08);
   }
 
   .glow-green-subtle {
-    box-shadow: 0 0 15px hsla(145, 60%, 45%, 0.15);
+    box-shadow: 0 0 15px hsla(145, 60%, 38%, 0.1);
   }
 
   .text-gradient-green {
-    background: linear-gradient(135deg, hsl(145, 60%, 45%), hsl(160, 70%, 55%));
+    background: linear-gradient(135deg, hsl(145, 60%, 38%), hsl(160, 70%, 45%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .glow-border {
-    border: 1px solid hsla(145, 60%, 45%, 0.3);
-    box-shadow: inset 0 0 20px hsla(145, 60%, 45%, 0.05), 0 0 20px hsla(145, 60%, 45%, 0.1);
+    border: 1px solid hsla(145, 60%, 38%, 0.2);
+    box-shadow: 0 2px 12px hsla(145, 60%, 38%, 0.06);
   }
 
   .upload-zone-glow {
-    background: radial-gradient(circle at center, hsla(145, 60%, 45%, 0.08) 0%, transparent 70%);
-    border: 2px dashed hsla(145, 60%, 45%, 0.3);
+    background: radial-gradient(circle at center, hsla(145, 60%, 38%, 0.05) 0%, transparent 70%);
+    border: 2px dashed hsla(145, 60%, 38%, 0.3);
   }
 
   .upload-zone-glow:hover {
-    border-color: hsla(145, 60%, 45%, 0.6);
-    background: radial-gradient(circle at center, hsla(145, 60%, 45%, 0.15) 0%, transparent 70%);
+    border-color: hsla(145, 60%, 38%, 0.5);
+    background: radial-gradient(circle at center, hsla(145, 60%, 38%, 0.1) 0%, transparent 70%);
   }
 }
+
 video {
   will-change: transform, contents;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
-/* Ensure no default Vite padding ruins the layout */
 #root {
   max-width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
 }
-/* Unique Letter Animations */
+
 @keyframes balance {
   0%, 100% { transform: rotate(0deg); }
   30%, 60% { transform: rotate(-45deg); }
