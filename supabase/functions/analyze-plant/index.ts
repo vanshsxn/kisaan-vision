@@ -34,7 +34,7 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert agricultural plant pathologist. Analyze the plant/leaf image and identify the plant species and any diseases visible. Always call the report_diagnosis tool with your findings. Be specific - identify the actual plant (rice, wheat, tomato, apple, etc.) and the actual disease (early blight, leaf rust, bacterial spot, etc.) when visible. Estimate severity based on visible damage."
+          content: "You are an expert agricultural plant pathologist. Analyze the plant/leaf image and identify the plant species and any diseases visible. Always call the report_diagnosis tool with your findings. Be specific - identify the actual plant (rice, wheat, tomato, apple, etc.) and the actual disease (early blight, leaf rust, bacterial spot, etc.) when visible. Estimate severity based on visible damage. ALWAYS provide 3-6 visualCues — concrete visual evidence (leaf shape, venation, lesions, color patterns, spore presence, margin shape) that justify your plant and disease identification."
         },
         {
           role: "user",
@@ -65,8 +65,24 @@ serve(async (req) => {
               prevention: { type: "array", items: { type: "string" } },
               affectedArea: { type: "number", description: "Estimated % of leaf area affected, 0-100" },
               spreadRisk: { type: "string", enum: ["Low", "Medium", "High"] },
+              visualCues: {
+                type: "array",
+                description: "List of specific visual features in the image that drove the diagnosis. Each cue must include what was observed, where on the leaf/plant, and how confident you are it's that feature (0-100).",
+                items: {
+                  type: "object",
+                  properties: {
+                    cue: { type: "string", description: "Short name e.g. 'Concentric brown lesions'" },
+                    description: { type: "string", description: "1 sentence explaining the visual evidence" },
+                    location: { type: "string", description: "Where on plant e.g. 'Lower leaf surface', 'Leaf margins'" },
+                    confidence: { type: "number", description: "Confidence in this cue 0-100" },
+                    supports: { type: "string", enum: ["plant", "disease", "both"], description: "Whether this cue supports plant ID, disease ID, or both" },
+                  },
+                  required: ["cue", "description", "location", "confidence", "supports"],
+                  additionalProperties: false,
+                },
+              },
             },
-            required: ["plantName", "disease", "confidence", "severity", "isHealthy", "symptoms", "treatment", "prevention", "healthScore", "affectedArea", "spreadRisk"],
+            required: ["plantName", "disease", "confidence", "severity", "isHealthy", "symptoms", "treatment", "prevention", "healthScore", "affectedArea", "spreadRisk", "visualCues"],
             additionalProperties: false,
           }
         }
@@ -137,7 +153,10 @@ serve(async (req) => {
         symptoms: ["Image could not be analyzed clearly"],
         treatment: ["Please upload a clearer close-up photo of the leaf"],
         prevention: [],
+        visualCues: [],
       };
+    }
+    if (!analysis.visualCues) analysis.visualCues = [];
     }
 
     return new Response(JSON.stringify(analysis), {
