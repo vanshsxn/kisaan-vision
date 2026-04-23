@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, ChevronDown, LayoutDashboard, LogOut, Search, Bell, ShoppingCart, HelpCircle } from "lucide-react";
+import { User, ChevronDown, LayoutDashboard, LogOut, Search, Bell, ShoppingCart, HelpCircle, Sparkles } from "lucide-react";
 
 const navItems = [
   { label: "Solutions", id: "solutions" },
@@ -85,7 +85,7 @@ const Navbar = () => {
             <button className="p-1 hover:text-[#4ade80] transition-colors">
               <ShoppingCart size={20} />
             </button>
-            <button 
+            <button
               onClick={() => navigate("/uploads")}
               className="text-sm font-bold hover:text-slate-800 transition-colors hidden lg:block"
             >
@@ -95,6 +95,13 @@ const Navbar = () => {
               Help
             </button>
           </div>
+
+          <button
+            onClick={() => scrollTo("ai-lab")}
+            className="hidden md:inline-flex items-center gap-1.5 bg-[#10b981] hover:bg-[#059669] text-white px-4 py-2 rounded-2xl text-sm font-bold transition-all shadow-md shadow-emerald-200"
+          >
+            <Sparkles className="w-4 h-4" /> Scan Now
+          </button>
 
           {user ? (
             <div className="relative" ref={dropdownRef}>
