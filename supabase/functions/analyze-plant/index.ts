@@ -157,7 +157,6 @@ serve(async (req) => {
       };
     }
     if (!analysis.visualCues) analysis.visualCues = [];
-    }
 
     return new Response(JSON.stringify(analysis), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
