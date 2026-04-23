@@ -2,18 +2,31 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CloudUpload, Loader2, Info, CheckCircle2, AlertTriangle,
-  Sprout, ShieldCheck, Activity, Leaf, FlaskConical, X, Download, RotateCcw, ImageIcon
+  Sprout, ShieldCheck, Activity, Leaf, FlaskConical, X, Download, RotateCcw, ImageIcon,
+  History, Trash2, Eye, FileText, Files
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
+import sampleRice from "@/assets/samples/rice-leaf.jpg";
+import sampleTomato from "@/assets/samples/tomato-blight.jpg";
+import sampleApple from "@/assets/samples/apple-scab.jpg";
+import sampleCotton from "@/assets/samples/cotton-leaf.jpg";
+
 const EXAMPLE_PLANTS = [
-  { name: "Rice plant", image: "https://images.unsplash.com/photo-1568347877321-f8935c7dc5a8?w=400&q=80" },
-  { name: "Tomato blight", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Tomato_late_blight.jpg/640px-Tomato_late_blight.jpg" },
-  { name: "Apple scab", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Apple_scab.JPG/640px-Apple_scab.JPG" },
-  { name: "Cotton plant", image: "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=400&q=80" },
+  { name: "Rice plant", image: sampleRice },
+  { name: "Tomato blight", image: sampleTomato },
+  { name: "Apple scab", image: sampleApple },
+  { name: "Cotton plant", image: sampleCotton },
 ];
+
+interface VisualCue {
+  cue: string;
+  description: string;
+  location: string;
+  confidence: number;
+  supports: "plant" | "disease" | "both";
+}
 
 interface Diagnosis {
   plantName: string;
@@ -29,13 +42,41 @@ interface Diagnosis {
   symptoms: string[];
   treatment: string[];
   prevention: string[];
+  visualCues?: VisualCue[];
 }
 
+interface HistoryEntry {
+  id: string;
+  timestamp: number;
+  plantName: string;
+  disease: string;
+  isHealthy: boolean;
+  thumbnail: string;
+  diagnosis: Diagnosis;
+  imageDataUrl: string;
+}
+
+const HISTORY_KEY = "kv_diagnosis_history_v1";
+const HISTORY_LIMIT = 10;
+
+const loadHistory = (): HistoryEntry[] => {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+const saveHistoryEntry = (entry: HistoryEntry) => {
+  try {
+    const list = [entry, ...loadHistory()].slice(0, HISTORY_LIMIT);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  } catch (e) { console.warn("history save failed", e); }
+};
+
 // ---- Utilities ----
-const resizeImage = (file: File, maxSize = 1024, quality = 0.85): Promise<string> =>
+const resizeImage = (src: File | string, maxSize = 1024, quality = 0.85): Promise<string> =>
   new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
+    const processImageSrc = (imageSrc: string) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
@@ -56,20 +97,19 @@ const resizeImage = (file: File, maxSize = 1024, quality = 0.85): Promise<string
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
       img.onerror = () => reject(new Error("Could not load image"));
-      img.src = e.target?.result as string;
+      img.src = imageSrc;
     };
-    reader.onerror = () => reject(new Error("Could not read file"));
-    reader.readAsDataURL(file);
+
+    if (typeof src === "string") {
+      processImageSrc(src);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => processImageSrc(e.target?.result as string);
+      reader.onerror = () => reject(new Error("Could not read file"));
+      reader.readAsDataURL(src);
+    }
   });
 
-const urlToFile = async (url: string, name: string): Promise<File> => {
-  const r = await fetch(url, { mode: "cors" });
-  if (!r.ok) throw new Error(`Image fetch failed: ${r.status}`);
-  const blob = await r.blob();
-  return new File([blob], name, { type: blob.type || "image/jpeg" });
-};
-
-// Direct invocation — uses CORRECT project URL from env, bypassing potentially stale client.ts
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://hpdqrrhdoqvcdbmpxqqz.supabase.co";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwZHFycmhkb3F2Y2RibXB4cXF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5NTcxNTYsImV4cCI6MjA4NjUzMzE1Nn0.KdQtvKEY5qhrJoqK5a_s8KBFv6QcHudBIOkhhXXaoME";
 
@@ -107,6 +147,176 @@ const callAnalyze = async (imageBase64: string): Promise<Diagnosis> => {
   return data as Diagnosis;
 };
 
+// ---- PDF Generation ----
+type PdfLayout = "single" | "multi";
+
+const generatePDF = (result: Diagnosis, imageDataUrl: string | null, layout: PdfLayout) => {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 36;
+  let y = margin;
+
+  const ensureSpace = (need: number) => {
+    if (layout === "multi" && y + need > pageH - 50) {
+      doc.addPage();
+      y = margin;
+    }
+  };
+
+  // Header
+  doc.setFillColor(16, 185, 129);
+  doc.rect(0, 0, pageW, 70, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(layout === "single" ? 16 : 20);
+  doc.setFont("helvetica", "bold");
+  doc.text("Kisaan Vision — Plant Diagnosis Report", margin, 40);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated: ${new Date().toLocaleString()}  •  Layout: ${layout === "single" ? "Compact (1-page)" : "Detailed (multi-page)"}`, margin, 58);
+  y = 90;
+
+  // Image + identity
+  const imgSize = layout === "single" ? 100 : 140;
+  if (imageDataUrl) {
+    try { doc.addImage(imageDataUrl, "JPEG", margin, y, imgSize, imgSize); } catch (e) { console.warn(e); }
+  }
+  const tx = margin + imgSize + 15;
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(layout === "single" ? 14 : 18);
+  doc.setFont("helvetica", "bold");
+  doc.text(result.plantName, tx, y + 18);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 116, 139);
+  doc.text(result.scientificName || "—", tx, y + 32);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(layout === "single" ? 11 : 13);
+  const [r, g, b] = result.isHealthy ? [16, 185, 129] : [220, 38, 38];
+  doc.setTextColor(r, g, b);
+  doc.text(result.isHealthy ? "Healthy Plant" : `Disease: ${result.disease}`, tx, y + 52);
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  const meta = [
+    `Severity: ${result.severity}`,
+    `Confidence: ${Math.round(result.confidence)}%`,
+    `Health: ${Math.round(result.healthScore)}%`,
+    `Affected Area: ${Math.round(result.affectedArea)}%`,
+    `Spread Risk: ${result.spreadRisk}`,
+  ];
+  meta.forEach((m, i) => doc.text(m, tx, y + 68 + i * 12));
+  y += imgSize + 20;
+
+  // Visual Cues — confidence breakdown that drove the diagnosis
+  if (layout === "multi") ensureSpace(80);
+  doc.setFillColor(236, 253, 245);
+  doc.rect(margin, y, pageW - margin * 2, 22, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(6, 95, 70);
+  doc.text("Visual Cues — Why the AI made this diagnosis", margin + 8, y + 15);
+  y += 28;
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 116, 139);
+  doc.text("Each cue below is a feature the AI detected in your image, with its confidence in that observation.", margin, y);
+  y += 14;
+
+  const cues = result.visualCues || [];
+  if (cues.length === 0) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120, 113, 108);
+    doc.text("No detailed cues returned by the model for this image.", margin, y);
+    y += 14;
+  } else {
+    cues.forEach((c) => {
+      const blockH = layout === "single" ? 32 : 40;
+      ensureSpace(blockH);
+      doc.setDrawColor(226, 232, 240);
+      doc.setFillColor(248, 250, 252);
+      doc.rect(margin, y, pageW - margin * 2, blockH, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(30, 41, 59);
+      const cueText = doc.splitTextToSize(c.cue, pageW - margin * 2 - 110);
+      doc.text(cueText, margin + 8, y + 12);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      const desc = doc.splitTextToSize(`${c.description}  (${c.location} · supports: ${c.supports})`, pageW - margin * 2 - 110);
+      doc.text(desc.slice(0, 2), margin + 8, y + 24);
+
+      // Confidence bar on right
+      const barX = pageW - margin - 95;
+      const barY = y + 12;
+      doc.setFillColor(226, 232, 240);
+      doc.rect(barX, barY, 80, 8, "F");
+      doc.setFillColor(16, 185, 129);
+      doc.rect(barX, barY, Math.max(2, (c.confidence / 100) * 80), 8, "F");
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(16, 185, 129);
+      doc.text(`${Math.round(c.confidence)}%`, barX + 30, barY + 22);
+
+      y += blockH + 4;
+    });
+  }
+  y += 8;
+
+  // Sections
+  const section = (title: string, items: string[]) => {
+    const need = 30 + Math.max(items.length, 1) * 14;
+    if (layout === "multi") ensureSpace(need);
+    if (layout === "single" && y + need > pageH - 40) return; // skip overflow in single page mode
+
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y, pageW - margin * 2, 20, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    doc.text(title, margin + 8, y + 14);
+    y += 26;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(layout === "single" ? 8 : 9);
+    doc.setTextColor(71, 85, 105);
+    const list = items.length ? items : ["None reported"];
+    list.forEach((item) => {
+      const lines = doc.splitTextToSize(`• ${item}`, pageW - margin * 2 - 10);
+      if (layout === "multi") ensureSpace(lines.length * 12);
+      if (layout === "single" && y + lines.length * 12 > pageH - 40) return;
+      doc.text(lines, margin + 8, y);
+      y += lines.length * (layout === "single" ? 10 : 12) + 2;
+    });
+    y += 6;
+  };
+
+  section("Symptoms Observed", result.symptoms);
+  section("Recommended Treatment", result.treatment);
+  section("Prevention Measures", result.prevention);
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      `Kisaan Vision AI Report  •  Page ${i} of ${pageCount}  •  Not a substitute for professional advice`,
+      pageW / 2, pageH - 20, { align: "center" }
+    );
+  }
+
+  const safeName = result.plantName.replace(/[^a-z0-9]/gi, "_");
+  doc.save(`KisaanVision_${safeName}_${layout}_${Date.now()}.pdf`);
+};
+
 // ---- Component ----
 const AIAnalyzer = () => {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
@@ -118,10 +328,14 @@ const AIAnalyzer = () => {
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
+  const [pdfLayout, setPdfLayout] = useState<PdfLayout>("multi");
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastBase64Ref = useRef<string | null>(null);
 
-  // Smooth fake progress while waiting
+  useEffect(() => { setHistory(loadHistory()); }, []);
+
   useEffect(() => {
     if (!isAnalyzing) { setProgress(0); return; }
     setProgress(5);
@@ -131,7 +345,7 @@ const AIAnalyzer = () => {
     return () => clearInterval(id);
   }, [isAnalyzing]);
 
-  const runAnalysis = useCallback(async (base64: string, attempt = 0) => {
+  const runAnalysis = useCallback(async (base64: string, dataUrl: string, fileName: string, attempt = 0) => {
     setIsAnalyzing(true);
     setError(null);
     setResult(null);
@@ -142,15 +356,27 @@ const AIAnalyzer = () => {
       setProgress(100);
       setResult(data);
       toast.success(`Diagnosis complete: ${data.plantName}`);
+
+      // Save to history
+      const entry: HistoryEntry = {
+        id: `${Date.now()}`,
+        timestamp: Date.now(),
+        plantName: data.plantName,
+        disease: data.disease,
+        isHealthy: data.isHealthy,
+        thumbnail: dataUrl,
+        diagnosis: data,
+        imageDataUrl: dataUrl,
+      };
+      saveHistoryEntry(entry);
+      setHistory(loadHistory());
     } catch (e: any) {
       const msg = e?.message || "Unknown error";
       console.error("[AIAnalyzer] analysis failed:", msg);
-      // Auto-retry once on transient errors
       if (attempt === 0 && /network|fetch|timeout|502|503|504/i.test(msg)) {
-        console.log("[AIAnalyzer] auto-retrying...");
         toast.info("Retrying analysis...");
         await new Promise((r) => setTimeout(r, 800));
-        return runAnalysis(base64, 1);
+        return runAnalysis(base64, dataUrl, fileName, 1);
       }
       setError(msg);
       toast.error(`Analysis failed: ${msg}`);
@@ -180,7 +406,7 @@ const AIAnalyzer = () => {
       setImageFileName(file.name);
       const base64 = dataUrl.split(",")[1];
       lastBase64Ref.current = base64;
-      await runAnalysis(base64, 0);
+      await runAnalysis(base64, dataUrl, file.name, 0);
     } catch (e: any) {
       console.error(e);
       setError(e?.message || "Failed to process image");
@@ -189,22 +415,31 @@ const AIAnalyzer = () => {
     }
   }, [runAnalysis]);
 
-  const handleExample = useCallback(async (url: string, name: string) => {
+  // Local sample handler — uses bundled assets (no external fetch dependency)
+  const handleExample = useCallback(async (assetUrl: string, name: string) => {
     try {
       toast.info(`Loading ${name}...`);
-      setStage("Fetching example...");
+      setStage("Loading sample...");
       setIsAnalyzing(true);
-      const file = await urlToFile(url, `${name}.jpg`);
-      await handleFile(file);
+      setError(null);
+      setResult(null);
+      const dataUrl = await resizeImage(assetUrl);
+      setImageDataUrl(dataUrl);
+      setImageFileName(`${name}.jpg`);
+      const base64 = dataUrl.split(",")[1];
+      lastBase64Ref.current = base64;
+      await runAnalysis(base64, dataUrl, `${name}.jpg`, 0);
     } catch (e: any) {
       console.error(e);
-      toast.error(`Could not load example: ${e?.message || ""}`);
+      toast.error(`Could not load sample: ${e?.message || ""}`);
       setIsAnalyzing(false);
     }
-  }, [handleFile]);
+  }, [runAnalysis]);
 
   const retry = () => {
-    if (lastBase64Ref.current) runAnalysis(lastBase64Ref.current, retryAttempt + 1);
+    if (lastBase64Ref.current && imageDataUrl) {
+      runAnalysis(lastBase64Ref.current, imageDataUrl, imageFileName, retryAttempt + 1);
+    }
   };
 
   const reset = () => {
@@ -216,104 +451,45 @@ const AIAnalyzer = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const downloadPDF = () => {
+  const downloadCurrent = (layout?: PdfLayout) => {
     if (!result) return;
     try {
-      const doc = new jsPDF({ unit: "pt", format: "a4" });
-      const pageW = doc.internal.pageSize.getWidth();
-      const margin = 40;
-      let y = margin;
-
-      // Header
-      doc.setFillColor(16, 185, 129);
-      doc.rect(0, 0, pageW, 80, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
-      doc.setFont("helvetica", "bold");
-      doc.text("Kisaan Vision — Plant Diagnosis Report", margin, 50);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 68);
-      y = 110;
-
-      // Image thumbnail
-      if (imageDataUrl) {
-        try {
-          doc.addImage(imageDataUrl, "JPEG", margin, y, 140, 140);
-        } catch (e) { console.warn("Image embed failed", e); }
-      }
-
-      // Plant identity (right of image)
-      const tx = margin + 160;
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text(result.plantName, tx, y + 20);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(100, 116, 139);
-      doc.text(result.scientificName || "—", tx, y + 38);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.setTextColor(result.isHealthy ? 16 : 220, result.isHealthy ? 185 : 38, result.isHealthy ? 129 : 38);
-      doc.text(result.isHealthy ? "✓ Healthy Plant" : `⚠ ${result.disease}`, tx, y + 64);
-
-      doc.setTextColor(71, 85, 105);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Severity: ${result.severity}`, tx, y + 86);
-      doc.text(`Confidence: ${Math.round(result.confidence)}%`, tx, y + 102);
-      doc.text(`Health Score: ${Math.round(result.healthScore)}%`, tx, y + 118);
-      doc.text(`Affected Area: ${Math.round(result.affectedArea)}%`, tx, y + 134);
-
-      y += 170;
-
-      const section = (title: string, items: string[]) => {
-        if (y > 720) { doc.addPage(); y = margin; }
-        doc.setFillColor(241, 245, 249);
-        doc.rect(margin, y, pageW - margin * 2, 22, "F");
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(30, 41, 59);
-        doc.text(title, margin + 10, y + 15);
-        y += 32;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(71, 85, 105);
-        const list = items.length ? items : ["None reported"];
-        list.forEach((item) => {
-          const lines = doc.splitTextToSize(`• ${item}`, pageW - margin * 2 - 10);
-          if (y + lines.length * 14 > 800) { doc.addPage(); y = margin; }
-          doc.text(lines, margin + 10, y);
-          y += lines.length * 14 + 2;
-        });
-        y += 8;
-      };
-
-      section("Symptoms Observed", result.symptoms);
-      section("Recommended Treatment", result.treatment);
-      section("Prevention Measures", result.prevention);
-
-      // Footer
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184);
-        doc.text(
-          `Kisaan Vision AI Report  •  Page ${i} of ${pageCount}  •  Not a substitute for professional advice`,
-          pageW / 2, 820, { align: "center" }
-        );
-      }
-
-      const safeName = result.plantName.replace(/[^a-z0-9]/gi, "_");
-      doc.save(`KisaanVision_${safeName}_${Date.now()}.pdf`);
-      toast.success("PDF report downloaded");
-    } catch (e: any) {
+      generatePDF(result, imageDataUrl, layout || pdfLayout);
+      toast.success(`PDF downloaded (${(layout || pdfLayout) === "single" ? "compact" : "detailed"})`);
+    } catch (e) {
       console.error(e);
       toast.error("Failed to generate PDF");
     }
+  };
+
+  const downloadHistoryEntry = (entry: HistoryEntry, layout: PdfLayout) => {
+    try {
+      generatePDF(entry.diagnosis, entry.imageDataUrl, layout);
+      toast.success("PDF downloaded");
+    } catch (e) {
+      toast.error("Failed to generate PDF");
+    }
+  };
+
+  const deleteHistoryEntry = (id: string) => {
+    const next = history.filter((h) => h.id !== id);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+    setHistory(next);
+    toast.success("Removed from history");
+  };
+
+  const clearHistory = () => {
+    localStorage.removeItem(HISTORY_KEY);
+    setHistory([]);
+    toast.success("History cleared");
+  };
+
+  const viewHistoryEntry = (entry: HistoryEntry) => {
+    setResult(entry.diagnosis);
+    setImageDataUrl(entry.imageDataUrl);
+    setImageFileName(`${entry.plantName}.jpg`);
+    setShowHistory(false);
+    setTimeout(() => document.getElementById("ai-lab")?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
   return (
@@ -326,6 +502,14 @@ const AIAnalyzer = () => {
           <p className="text-[#64748b] max-w-2xl mx-auto text-lg">
             Upload a photo or pick an example. Our AI identifies the plant and diagnoses any disease.
           </p>
+          {history.length > 0 && (
+            <button
+              onClick={() => setShowHistory(true)}
+              className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#10b981] hover:text-[#059669] transition"
+            >
+              <History className="w-4 h-4" /> View history ({history.length})
+            </button>
+          )}
         </div>
 
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
@@ -429,7 +613,7 @@ const AIAnalyzer = () => {
           {/* Examples + Tips */}
           <div className="flex flex-col gap-6">
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#f1f5f9]">
-              <p className="text-xs font-bold text-[#64748b] uppercase tracking-wider mb-4">Try Examples</p>
+              <p className="text-xs font-bold text-[#64748b] uppercase tracking-wider mb-4">Try Examples (Bundled)</p>
               <div className="grid grid-cols-2 gap-3">
                 {EXAMPLE_PLANTS.map((plant) => (
                   <button
@@ -442,7 +626,7 @@ const AIAnalyzer = () => {
                       src={plant.image}
                       className="w-full h-16 rounded-xl object-cover border border-[#f1f5f9]"
                       alt={plant.name}
-                      onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.3"; }}
+                      loading="lazy"
                     />
                     <span className="text-[10px] font-medium text-[#64748b] text-center">{plant.name}</span>
                   </button>
@@ -474,16 +658,126 @@ const AIAnalyzer = () => {
               exit={{ opacity: 0, y: -20 }}
               className="max-w-6xl mx-auto"
             >
-              <DiagnosisReport result={result} image={imageDataUrl} onDownload={downloadPDF} />
+              <DiagnosisReport
+                result={result}
+                image={imageDataUrl}
+                pdfLayout={pdfLayout}
+                setPdfLayout={setPdfLayout}
+                onDownload={downloadCurrent}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* History Modal */}
+      <AnimatePresence>
+        {showHistory && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowHistory(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <History className="w-5 h-5 text-[#10b981]" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#1e293b]">Diagnosis History</h3>
+                    <p className="text-xs text-[#64748b]">Last {HISTORY_LIMIT} scans on this device</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {history.length > 0 && (
+                    <button
+                      onClick={clearHistory}
+                      className="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowHistory(false)}
+                    className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-[#64748b]" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                {history.length === 0 ? (
+                  <div className="text-center py-12 text-[#94a3b8]">
+                    <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No diagnoses yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {history.map((entry) => (
+                      <div key={entry.id} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition">
+                        <img src={entry.thumbnail} alt={entry.plantName} className="w-16 h-16 rounded-xl object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-[#1e293b] text-sm truncate">{entry.plantName}</p>
+                          <p className={`text-xs font-medium truncate ${entry.isHealthy ? "text-emerald-600" : "text-red-600"}`}>
+                            {entry.isHealthy ? "Healthy" : entry.disease}
+                          </p>
+                          <p className="text-[10px] text-[#94a3b8]">{new Date(entry.timestamp).toLocaleString()}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => viewHistoryEntry(entry)}
+                            className="w-8 h-8 rounded-lg bg-white hover:bg-emerald-50 flex items-center justify-center transition"
+                            title="View"
+                          >
+                            <Eye className="w-4 h-4 text-[#10b981]" />
+                          </button>
+                          <button
+                            onClick={() => downloadHistoryEntry(entry, "single")}
+                            className="w-8 h-8 rounded-lg bg-white hover:bg-blue-50 flex items-center justify-center transition"
+                            title="Download 1-page PDF"
+                          >
+                            <FileText className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => downloadHistoryEntry(entry, "multi")}
+                            className="w-8 h-8 rounded-lg bg-white hover:bg-blue-50 flex items-center justify-center transition"
+                            title="Download multi-page PDF"
+                          >
+                            <Files className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => deleteHistoryEntry(entry.id)}
+                            className="w-8 h-8 rounded-lg bg-white hover:bg-red-50 flex items-center justify-center transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
 
-const DiagnosisReport = ({ result, image, onDownload }: { result: Diagnosis; image: string | null; onDownload: () => void }) => {
+const DiagnosisReport = ({
+  result, image, pdfLayout, setPdfLayout, onDownload
+}: {
+  result: Diagnosis; image: string | null;
+  pdfLayout: PdfLayout; setPdfLayout: (l: PdfLayout) => void;
+  onDownload: (layout?: PdfLayout) => void;
+}) => {
   const healthColor = result.healthScore >= 70 ? "#10b981" : result.healthScore >= 40 ? "#f59e0b" : "#ef4444";
   const severityColor = ({ None: "bg-emerald-100 text-emerald-700", Mild: "bg-yellow-100 text-yellow-700", Moderate: "bg-orange-100 text-orange-700", Severe: "bg-red-100 text-red-700" } as any)[result.severity] || "bg-slate-100 text-slate-700";
   const riskColor = ({ Low: "bg-emerald-100 text-emerald-700", Medium: "bg-yellow-100 text-yellow-700", High: "bg-red-100 text-red-700" } as any)[result.spreadRisk] || "bg-slate-100 text-slate-700";
@@ -512,8 +806,30 @@ const DiagnosisReport = ({ result, image, onDownload }: { result: Diagnosis; ima
             <span className={`px-3 py-1 rounded-full text-xs font-bold ${severityColor}`}>Severity: {result.severity}</span>
             <span className={`px-3 py-1 rounded-full text-xs font-bold ${riskColor}`}>Spread Risk: {result.spreadRisk}</span>
           </div>
+
+          {/* PDF layout chooser */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="text-xs font-bold text-[#64748b] uppercase tracking-wider mr-1">PDF Layout:</span>
+            <button
+              onClick={() => setPdfLayout("single")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                pdfLayout === "single" ? "bg-[#10b981] text-white" : "bg-slate-100 text-[#64748b] hover:bg-slate-200"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" /> 1-page (Compact)
+            </button>
+            <button
+              onClick={() => setPdfLayout("multi")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                pdfLayout === "multi" ? "bg-[#10b981] text-white" : "bg-slate-100 text-[#64748b] hover:bg-slate-200"
+              }`}
+            >
+              <Files className="w-3.5 h-3.5" /> Multi-page (Detailed)
+            </button>
+          </div>
+
           <button
-            onClick={onDownload}
+            onClick={() => onDownload()}
             className="inline-flex items-center gap-2 bg-[#1e293b] hover:bg-black text-white font-bold px-5 py-2.5 rounded-xl text-sm transition"
           >
             <Download className="w-4 h-4" /> Download PDF Report
@@ -538,6 +854,50 @@ const DiagnosisReport = ({ result, image, onDownload }: { result: Diagnosis; ima
           <Bar label="Tissue Damage" value={result.affectedArea} color="#f59e0b" />
         </div>
       </div>
+
+      {/* Visual Cues — what the AI saw */}
+      {result.visualCues && result.visualCues.length > 0 && (
+        <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-6 mb-8">
+          <h4 className="font-bold text-[#1e293b] mb-1 flex items-center gap-2">
+            <Eye className="w-4 h-4 text-[#10b981]" /> Visual Cues — Why the AI made this call
+          </h4>
+          <p className="text-xs text-[#64748b] mb-4">Each cue is a feature the AI spotted in your image. The bar shows how confident it is in that observation.</p>
+          <div className="space-y-3">
+            {result.visualCues.map((c, i) => (
+              <div key={i} className="bg-white rounded-xl p-4 border border-emerald-100/60">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-[#1e293b]">{c.cue}</p>
+                    <p className="text-xs text-[#64748b] mt-0.5">{c.description}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-[#64748b]">
+                        {c.location}
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                        c.supports === "plant" ? "bg-blue-100 text-blue-700" :
+                        c.supports === "disease" ? "bg-red-100 text-red-700" :
+                        "bg-purple-100 text-purple-700"
+                      }`}>
+                        Supports: {c.supports}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-lg font-extrabold text-[#10b981]">{Math.round(c.confidence)}%</div>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }} animate={{ width: `${c.confidence}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: i * 0.05 }}
+                    className="h-full rounded-full bg-gradient-to-r from-[#10b981] to-[#059669]"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <InfoCard title="Symptoms" icon={<AlertTriangle className="w-4 h-4" />} color="text-orange-600 bg-orange-50" items={result.symptoms} />
