@@ -61,7 +61,7 @@ const Help = () => {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 maxLength={80}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
-                placeholder="Vansh Kumar"
+                placeholder="Vansh Saxena"
               />
             </Field>
             <Field label="Your Email" error={errors.email}>
