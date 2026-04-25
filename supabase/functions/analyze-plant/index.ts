@@ -23,50 +23,136 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("GEMINI_API_KEY");
-    
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "API Key is not configured in Supabase Secrets" }), {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY is not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Clean the base64 string
-    const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
+    // Ensure data URL prefix for the gateway
+    const imageDataUrl = imageBase64.startsWith("data:")
+      ? imageBase64
+      : `data:image/jpeg;base64,${imageBase64}`;
 
-    // Prepare direct Gemini API Payload
+    const systemPrompt =
+      "You are an expert plant pathologist. Analyze the provided leaf/plant image. Identify the plant and any disease present. Be specific and confident. Always call the return_diagnosis tool with your findings.";
+
     const aiPayload = {
-      contents: [{
-        parts: [
-          { text: "You are an expert plant pathologist. Analyze this image. Identify the plant and any disease. ALWAYS output your response as a raw JSON object matching this structure: { \"plantName\": string, \"scientificName\": string, \"disease\": string, \"confidence\": number, \"severity\": \"None\"|\"Mild\"|\"Moderate\"|\"Severe\", \"healthScore\": number, \"isHealthy\": boolean, \"symptoms\": string[], \"treatment\": string[], \"prevention\": string[], \"affectedArea\": number, \"spreadRisk\": \"Low\"|\"Medium\"|\"High\", \"visualCues\": [{ \"cue\": string, \"description\": string, \"location\": string, \"confidence\": number, \"supports\": \"plant\"|\"disease\"|\"both\" }] }. Do not include markdown formatting or backticks." },
-          { inline_data: { mime_type: "image/jpeg", data: cleanBase64 } }
-        ]
-      }]
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Analyze this plant image and return a structured diagnosis." },
+            { type: "image_url", image_url: { url: imageDataUrl } },
+          ],
+        },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "return_diagnosis",
+            description: "Return a structured plant diagnosis.",
+            parameters: {
+              type: "object",
+              properties: {
+                plantName: { type: "string" },
+                scientificName: { type: "string" },
+                disease: { type: "string" },
+                confidence: { type: "number" },
+                severity: { type: "string", enum: ["None", "Mild", "Moderate", "Severe"] },
+                healthScore: { type: "number" },
+                isHealthy: { type: "boolean" },
+                symptoms: { type: "array", items: { type: "string" } },
+                treatment: { type: "array", items: { type: "string" } },
+                prevention: { type: "array", items: { type: "string" } },
+                affectedArea: { type: "number" },
+                spreadRisk: { type: "string", enum: ["Low", "Medium", "High"] },
+                visualCues: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      cue: { type: "string" },
+                      description: { type: "string" },
+                      location: { type: "string" },
+                      confidence: { type: "number" },
+                      supports: { type: "string", enum: ["plant", "disease", "both"] },
+                    },
+                    required: ["cue", "description", "location", "confidence", "supports"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: [
+                "plantName", "disease", "confidence", "severity", "healthScore",
+                "isHealthy", "symptoms", "treatment", "prevention", "affectedArea",
+                "spreadRisk", "visualCues",
+              ],
+              additionalProperties: false,
+            },
+          },
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "return_diagnosis" } },
     };
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(aiPayload),
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Gemini API Error: ${err}`);
+      const errText = await response.text();
+      console.error("AI gateway error:", response.status, errText);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits in Lovable workspace settings." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: `AI gateway error: ${errText}` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const result = await response.json();
-    const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    // Parse the JSON from Gemini's text output
+    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+    const argsStr = toolCall?.function?.arguments;
+
+    if (!argsStr) {
+      console.error("No tool call returned:", JSON.stringify(result));
+      return new Response(JSON.stringify({ error: "AI returned no structured diagnosis" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let analysis;
     try {
-      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-      analysis = JSON.parse(jsonMatch ? jsonMatch[0] : textResponse);
-    } catch (e) {
-      console.error("Failed to parse Gemini JSON:", textResponse);
-      throw new Error("AI returned invalid data format");
+      analysis = JSON.parse(argsStr);
+    } catch (parseErr) {
+      console.error("Failed to parse tool args:", argsStr);
+      return new Response(JSON.stringify({ error: "AI returned invalid data format" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify(analysis), {
@@ -75,7 +161,8 @@ serve(async (req) => {
 
   } catch (e) {
     console.error("analyze-plant error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
