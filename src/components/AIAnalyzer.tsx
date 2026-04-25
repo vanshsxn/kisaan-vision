@@ -352,9 +352,40 @@ const AIAnalyzer = () => {
     setRetryAttempt(attempt);
     setStage(attempt === 0 ? "Sending to AI..." : `Retrying (attempt ${attempt + 1})...`);
     try {
-      const data = await callAnalyze(base64);
+      const raw = await callAnalyze(base64);
+      // Normalize numeric fields — AI sometimes returns 0–1 fractions instead of 0–100 percentages
+      const norm = (v: any, fallback = 0): number => {
+        const n = typeof v === "number" ? v : parseFloat(v);
+        if (!isFinite(n)) return fallback;
+        const scaled = n > 0 && n <= 1 ? n * 100 : n;
+        return Math.max(0, Math.min(100, Math.round(scaled)));
+      };
+      const data: Diagnosis = {
+        ...raw,
+        confidence: norm(raw.confidence, 75),
+        healthScore: norm(raw.healthScore, raw.isHealthy ? 90 : 40),
+        affectedArea: norm(raw.affectedArea, raw.isHealthy ? 0 : 30),
+        visualCues: (raw.visualCues || []).map((c: any) => ({ ...c, confidence: norm(c.confidence, 70) })),
+      };
       setProgress(100);
       setResult(data);
+
+      // Notification for nav bell
+      try {
+        const notif = {
+          id: `${Date.now()}`,
+          timestamp: Date.now(),
+          plantName: data.plantName,
+          disease: data.disease,
+          isHealthy: data.isHealthy,
+          read: false,
+        };
+        const list = JSON.parse(localStorage.getItem("kv_notifications_v1") || "[]");
+        const next = [notif, ...list].slice(0, 20);
+        localStorage.setItem("kv_notifications_v1", JSON.stringify(next));
+        window.dispatchEvent(new Event("kv-notifications-updated"));
+      } catch {}
+
       toast.success(`Diagnosis complete: ${data.plantName}`);
 
       // Save to history
