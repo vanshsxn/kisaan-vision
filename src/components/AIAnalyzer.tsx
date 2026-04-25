@@ -8,16 +8,16 @@ import {
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
-import sampleRice from "@/assets/samples/rice-leaf.jpg";
+import sampleAppleLeaf from "@/assets/samples/apple-leaf.jpg";
 import sampleTomato from "@/assets/samples/tomato-blight.jpg";
-import sampleApple from "@/assets/samples/apple-scab.jpg";
-import sampleCotton from "@/assets/samples/cotton-leaf.jpg";
+import sampleAppleScab from "@/assets/samples/apple-scab.jpg";
+import sampleHealthyCorn from "@/assets/samples/healthy-corn.jpg";
 
 const EXAMPLE_PLANTS = [
-  { name: "Rice plant", image: sampleRice },
+  { name: "Apple plant", image: sampleAppleLeaf },
   { name: "Tomato blight", image: sampleTomato },
-  { name: "Apple scab", image: sampleApple },
-  { name: "Cotton plant", image: sampleCotton },
+  { name: "Apple scab", image: sampleAppleScab },
+  { name: "Healthy corn", image: sampleHealthyCorn },
 ];
 
 interface VisualCue {
