@@ -14,6 +14,10 @@ import Chatbot from "./pages/Chatbot";
 import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import FarmingMethodDetail from "./pages/FarmingMethodDetail";
+import Diagnostics from "./pages/Diagnostics";
+import Plans from "./pages/Plans";
+import Help from "./pages/Help";
+import Uploads from "./pages/Uploads";
 import AuthCallback from "./integrations/lovable/auth-callback";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -42,6 +46,10 @@ const AppContent = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/~oauth" element={<AuthCallback />} />
         <Route path="/farming-methods/:slug" element={<FarmingMethodDetail />} />
+        <Route path="/diagnostics" element={<Diagnostics />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/uploads" element={<Uploads />} />
         <Route
           path="/dashboard"
           element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
