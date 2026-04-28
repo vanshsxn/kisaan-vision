@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { addNotification } from "@/lib/notifications";
 
 import sampleAppleLeaf from "@/assets/samples/apple-leaf.jpg";
 import sampleTomato from "@/assets/samples/tomato-blight.jpg";
