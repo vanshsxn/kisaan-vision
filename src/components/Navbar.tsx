@@ -142,7 +142,7 @@ const Navbar = () => {
                         notifications.map((n) => (
                           <button
                             key={n.id}
-                            onClick={() => { setNotifOpen(false); navigate("/uploads"); }}
+                            onClick={() => handleNotifClick(n)}
                             className="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition flex items-start gap-3"
                           >
                             <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${n.isHealthy ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"}`}>
