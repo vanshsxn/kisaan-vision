@@ -47,6 +47,7 @@ const bookingSchema = z.object({
 const Plans = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmation, setConfirmation] = useState<{ id: string; plan: string; name: string; email: string } | null>(null);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", preferredDate: "", notes: "" });
 
   const submitBooking = async (e: React.FormEvent) => {
@@ -60,7 +61,7 @@ const Plans = () => {
     setSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { error } = await supabase.from("consultation_bookings").insert({
+      const { data, error } = await supabase.from("consultation_bookings").insert({
         user_id: session?.user.id ?? null,
         plan_name: selectedPlan,
         full_name: parsed.data.fullName,
@@ -68,9 +69,15 @@ const Plans = () => {
         phone: parsed.data.phone,
         preferred_date: parsed.data.preferredDate || null,
         notes: parsed.data.notes || null,
-      });
+      }).select("id").single();
       if (error) throw error;
-      toast.success(`Booking received! We'll contact you within 24 hours about ${selectedPlan}.`);
+      toast.success("Booking confirmed!");
+      setConfirmation({
+        id: data?.id ?? `KV-${Date.now()}`,
+        plan: selectedPlan,
+        name: parsed.data.fullName,
+        email: parsed.data.email,
+      });
       setSelectedPlan(null);
       setForm({ fullName: "", email: "", phone: "", preferredDate: "", notes: "" });
     } catch (err: any) {
@@ -201,6 +208,46 @@ const Plans = () => {
                 {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : "Confirm Booking"}
               </button>
             </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {confirmation && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setConfirmation(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center"
+            >
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                <Check className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Booking Confirmed!</h2>
+              <p className="text-sm text-slate-500 mb-5">Thanks {confirmation.name.split(" ")[0]} — our team will reach out at <span className="font-bold text-slate-700">{confirmation.email}</span> within 24 hours.</p>
+
+              <div className="bg-slate-50 rounded-2xl p-4 mb-5 text-left space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Plan</span>
+                  <span className="text-slate-900 font-bold">{confirmation.plan}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Booking ID</span>
+                  <span className="font-mono text-xs text-slate-700 font-bold break-all">{confirmation.id}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setConfirmation(null)}
+                className="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md shadow-emerald-200"
+              >
+                Done
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

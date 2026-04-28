@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import {
   CloudUpload, Loader2, Info, CheckCircle2, AlertTriangle,
   Sprout, ShieldCheck, Activity, Leaf, FlaskConical, X, Download, RotateCcw, ImageIcon,
@@ -320,6 +322,19 @@ const generatePDF = (result: Diagnosis, imageDataUrl: string | null, layout: Pdf
 
 // ---- Component ----
 const AIAnalyzer = () => {
+  const navigate = useNavigate();
+  const [authed, setAuthed] = useState<boolean | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setAuthed(!!s));
+    return () => subscription.unsubscribe();
+  }, []);
+  const requireAuth = useCallback(() => {
+    if (authed) return true;
+    toast.error("Please sign in to scan a plant.");
+    navigate("/login");
+    return false;
+  }, [authed, navigate]);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -351,7 +366,7 @@ const AIAnalyzer = () => {
     setError(null);
     setResult(null);
     setRetryAttempt(attempt);
-    setStage(attempt === 0 ? "Sending to AI..." : `Retrying (attempt ${attempt + 1})...`);
+    setStage(attempt === 0 ? "Analyzing..." : `Retrying analysis (attempt ${attempt + 1})...`);
     try {
       const raw = await callAnalyze(base64);
       // Normalize numeric fields — AI sometimes returns 0–1 fractions instead of 0–100 percentages
@@ -412,21 +427,26 @@ const AIAnalyzer = () => {
   }, []);
 
   const handleFile = useCallback(async (file?: File | null) => {
+    if (!requireAuth()) return;
     if (!file) {
-      toast.error("No image selected. Please choose a plant image.");
+      toast.error("No image selected. Please choose a plant image (JPG, PNG, or WebP).");
       return;
     }
-    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!file.type.startsWith("image/") || (file.type && !allowed.includes(file.type))) {
-      toast.error("Unsupported format. Please upload a JPG, PNG, or WebP image.");
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      toast.error(`Unsupported format "${file.type || "unknown"}". Only JPG, PNG, or WebP are accepted.`);
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("Image too large (max 15MB)");
+    if (file.size === 0) {
+      toast.error("Image file is empty (0 bytes). Please pick a different photo.");
       return;
     }
     if (file.size < 1024) {
-      toast.error("Image looks empty or corrupt. Try another photo.");
+      toast.error("Image looks empty or corrupt (under 1 KB). Try another photo.");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("Image too large (max 15MB). Compress and try again.");
       return;
     }
     try {
@@ -449,10 +469,11 @@ const AIAnalyzer = () => {
       toast.error(e?.message || "Failed to process image");
       setIsAnalyzing(false);
     }
-  }, [runAnalysis]);
+  }, [runAnalysis, requireAuth]);
 
   // Local sample handler — uses bundled assets (no external fetch dependency)
   const handleExample = useCallback(async (assetUrl: string, name: string) => {
+    if (!requireAuth()) return;
     try {
       toast.info(`Loading ${name}...`);
       setStage("Loading sample...");
@@ -470,7 +491,7 @@ const AIAnalyzer = () => {
       toast.error(`Could not load sample: ${e?.message || ""}`);
       setIsAnalyzing(false);
     }
-  }, [runAnalysis]);
+  }, [runAnalysis, requireAuth]);
 
   const retry = () => {
     if (lastBase64Ref.current && imageDataUrl) {
