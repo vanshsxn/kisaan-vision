@@ -64,21 +64,21 @@ const Navbar = () => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAllRead = () => {
-    const next = notifications.map((n) => ({ ...n, read: true }));
-    setNotifications(next);
-    localStorage.setItem(NOTIF_KEY, JSON.stringify(next));
-  };
-
-  const clearNotifs = () => {
+  const clearNotifs = async () => {
     setNotifications([]);
-    localStorage.removeItem(NOTIF_KEY);
+    await clearAllNotifications();
   };
 
-  const openNotifs = () => {
-    setNotifOpen((v) => !v);
-    if (!notifOpen && unreadCount > 0) setTimeout(markAllRead, 600);
+  const handleNotifClick = async (n: AppNotification) => {
+    if (!n.read) {
+      await markNotificationRead(n.id);
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    }
+    setNotifOpen(false);
+    navigate(`/uploads?scan=${encodeURIComponent(n.id)}`);
   };
+
+  const openNotifs = () => setNotifOpen((v) => !v);
 
   return (
     <motion.nav
