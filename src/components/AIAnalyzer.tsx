@@ -370,21 +370,14 @@ const AIAnalyzer = () => {
       setProgress(100);
       setResult(data);
 
-      // Notification for nav bell
+      // Notification (DB if signed in, localStorage fallback)
       try {
-        const notif = {
-          id: `${Date.now()}`,
-          timestamp: Date.now(),
+        await addNotification({
           plantName: data.plantName,
           disease: data.disease,
           isHealthy: data.isHealthy,
-          read: false,
-        };
-        const list = JSON.parse(localStorage.getItem("kv_notifications_v1") || "[]");
-        const next = [notif, ...list].slice(0, 20);
-        localStorage.setItem("kv_notifications_v1", JSON.stringify(next));
-        window.dispatchEvent(new Event("kv-notifications-updated"));
-      } catch {}
+        });
+      } catch (e) { console.warn("notif failed", e); }
 
       toast.success(`Diagnosis complete: ${data.plantName}`);
 
