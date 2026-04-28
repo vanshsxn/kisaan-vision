@@ -469,7 +469,7 @@ const AIAnalyzer = () => {
       toast.error(e?.message || "Failed to process image");
       setIsAnalyzing(false);
     }
-  }, [runAnalysis]);
+  }, [runAnalysis, requireAuth]);
 
   // Local sample handler — uses bundled assets (no external fetch dependency)
   const handleExample = useCallback(async (assetUrl: string, name: string) => {
@@ -491,7 +491,7 @@ const AIAnalyzer = () => {
       toast.error(`Could not load sample: ${e?.message || ""}`);
       setIsAnalyzing(false);
     }
-  }, [runAnalysis]);
+  }, [runAnalysis, requireAuth]);
 
   const retry = () => {
     if (lastBase64Ref.current && imageDataUrl) {
