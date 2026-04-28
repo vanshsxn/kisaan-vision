@@ -166,32 +166,41 @@ const Dashboard = () => {
             Recent Activity
           </h2>
           <div className="space-y-3">
-            {recentItems.map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 + i * 0.1 }}
-                className="glass rounded-xl p-4 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg glass p-2 glow-green-subtle">
-                    <item.icon className="h-4 w-4 text-primary" />
+            {recent.length === 0 ? (
+              <div className="glass rounded-xl p-6 text-center text-sm text-muted-foreground">
+                No scans yet. Run your first plant scan from the AI Lab.
+              </div>
+            ) : (
+              recent.map((item, i) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + i * 0.1 }}
+                  onClick={() => navigate(`/uploads?scan=${encodeURIComponent(item.id)}`)}
+                  className="glass rounded-xl p-4 flex items-center justify-between cursor-pointer hover:glow-green transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg glass p-2 glow-green-subtle">
+                      {item.isHealthy
+                        ? <CheckCircle2 className="h-4 w-4 text-primary" />
+                        : <AlertTriangle className="h-4 w-4 text-destructive" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">{item.date}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.date}</p>
-                  </div>
-                </div>
-                <span className="text-xs font-medium text-primary glass rounded-full px-3 py-1">
-                  {item.status}
-                </span>
-              </motion.div>
-            ))}
+                  <span className={`text-xs font-medium glass rounded-full px-3 py-1 ${item.isHealthy ? "text-primary" : "text-destructive"}`}>
+                    {item.status}
+                  </span>
+                </motion.div>
+              ))
+            )}
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Full analysis history coming soon with AI integration 🚀
+            Live data — synced from your account across devices 🌱
           </p>
         </motion.div>
       </div>
