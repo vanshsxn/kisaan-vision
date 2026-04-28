@@ -4,44 +4,67 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Bot, Leaf, TrendingUp, Activity,
-  Calendar, ImageIcon, MessageSquare, ScanLine
+  Calendar, ImageIcon, ScanLine, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import { fetchNotifications, type AppNotification } from "@/lib/notifications";
 
-const stats = [
-  { icon: ScanLine, label: "Scans Done", value: "—", color: "text-primary" },
-  { icon: Leaf, label: "Crops Analyzed", value: "—", color: "text-primary" },
-  { icon: Activity, label: "Health Score", value: "—", color: "text-primary" },
-  { icon: TrendingUp, label: "Insights", value: "Coming Soon", color: "text-muted-foreground" },
-];
-
-const recentItems = [
-  { title: "Tomato Leaf Scan", date: "Demo", status: "Healthy", icon: Leaf },
-  { title: "Rice Paddy Analysis", date: "Demo", status: "Mild Blight", icon: ImageIcon },
-  { title: "Wheat Field Report", date: "Demo", status: "Nutrient Deficiency", icon: ScanLine },
-];
+interface RecentScan {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  isHealthy: boolean;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [scansDone, setScansDone] = useState<number>(0);
+  const [healthyCount, setHealthyCount] = useState<number>(0);
+  const [diseasedCount, setDiseasedCount] = useState<number>(0);
+  const [recent, setRecent] = useState<RecentScan[]>([]);
 
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/login"); return; }
 
-      const { data } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("user_id", session.user.id)
         .single();
+      setFullName(profile?.full_name ?? session.user.email?.split("@")[0] ?? "Farmer");
 
-      setFullName(data?.full_name ?? session.user.email?.split("@")[0] ?? "Farmer");
+      // Pull notifications (per-user scan history from DB)
+      const notifs: AppNotification[] = await fetchNotifications();
+      setScansDone(notifs.length);
+      setHealthyCount(notifs.filter((n) => n.isHealthy).length);
+      setDiseasedCount(notifs.filter((n) => !n.isHealthy).length);
+      setRecent(
+        notifs.slice(0, 5).map((n) => ({
+          id: n.id,
+          title: n.plantName,
+          date: new Date(n.timestamp).toLocaleString(),
+          status: n.isHealthy ? "Healthy" : (n.disease || "Diseased"),
+          isHealthy: n.isHealthy,
+        }))
+      );
+
       setLoading(false);
     };
     load();
   }, [navigate]);
+
+  const healthScore = scansDone > 0 ? Math.round((healthyCount / scansDone) * 100) : 0;
+  const stats = [
+    { icon: ScanLine, label: "Scans Done", value: String(scansDone), color: "text-primary" },
+    { icon: Leaf, label: "Healthy Crops", value: String(healthyCount), color: "text-primary" },
+    { icon: Activity, label: "Health Score", value: scansDone > 0 ? `${healthScore}%` : "—", color: "text-primary" },
+    { icon: TrendingUp, label: "Issues Found", value: String(diseasedCount), color: "text-muted-foreground" },
+  ];
 
   if (loading) {
     return (
