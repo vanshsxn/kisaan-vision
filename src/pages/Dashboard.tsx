@@ -4,44 +4,67 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Bot, Leaf, TrendingUp, Activity,
-  Calendar, ImageIcon, MessageSquare, ScanLine
+  Calendar, ImageIcon, ScanLine, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import { fetchNotifications, type AppNotification } from "@/lib/notifications";
 
-const stats = [
-  { icon: ScanLine, label: "Scans Done", value: "—", color: "text-primary" },
-  { icon: Leaf, label: "Crops Analyzed", value: "—", color: "text-primary" },
-  { icon: Activity, label: "Health Score", value: "—", color: "text-primary" },
-  { icon: TrendingUp, label: "Insights", value: "Coming Soon", color: "text-muted-foreground" },
-];
-
-const recentItems = [
-  { title: "Tomato Leaf Scan", date: "Demo", status: "Healthy", icon: Leaf },
-  { title: "Rice Paddy Analysis", date: "Demo", status: "Mild Blight", icon: ImageIcon },
-  { title: "Wheat Field Report", date: "Demo", status: "Nutrient Deficiency", icon: ScanLine },
-];
+interface RecentScan {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  isHealthy: boolean;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [scansDone, setScansDone] = useState<number>(0);
+  const [healthyCount, setHealthyCount] = useState<number>(0);
+  const [diseasedCount, setDiseasedCount] = useState<number>(0);
+  const [recent, setRecent] = useState<RecentScan[]>([]);
 
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/login"); return; }
 
-      const { data } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("user_id", session.user.id)
         .single();
+      setFullName(profile?.full_name ?? session.user.email?.split("@")[0] ?? "Farmer");
 
-      setFullName(data?.full_name ?? session.user.email?.split("@")[0] ?? "Farmer");
+      // Pull notifications (per-user scan history from DB)
+      const notifs: AppNotification[] = await fetchNotifications();
+      setScansDone(notifs.length);
+      setHealthyCount(notifs.filter((n) => n.isHealthy).length);
+      setDiseasedCount(notifs.filter((n) => !n.isHealthy).length);
+      setRecent(
+        notifs.slice(0, 5).map((n) => ({
+          id: n.id,
+          title: n.plantName,
+          date: new Date(n.timestamp).toLocaleString(),
+          status: n.isHealthy ? "Healthy" : (n.disease || "Diseased"),
+          isHealthy: n.isHealthy,
+        }))
+      );
+
       setLoading(false);
     };
     load();
   }, [navigate]);
+
+  const healthScore = scansDone > 0 ? Math.round((healthyCount / scansDone) * 100) : 0;
+  const stats = [
+    { icon: ScanLine, label: "Scans Done", value: String(scansDone), color: "text-primary" },
+    { icon: Leaf, label: "Healthy Crops", value: String(healthyCount), color: "text-primary" },
+    { icon: Activity, label: "Health Score", value: scansDone > 0 ? `${healthScore}%` : "—", color: "text-primary" },
+    { icon: TrendingUp, label: "Issues Found", value: String(diseasedCount), color: "text-muted-foreground" },
+  ];
 
   if (loading) {
     return (
@@ -143,32 +166,41 @@ const Dashboard = () => {
             Recent Activity
           </h2>
           <div className="space-y-3">
-            {recentItems.map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 + i * 0.1 }}
-                className="glass rounded-xl p-4 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg glass p-2 glow-green-subtle">
-                    <item.icon className="h-4 w-4 text-primary" />
+            {recent.length === 0 ? (
+              <div className="glass rounded-xl p-6 text-center text-sm text-muted-foreground">
+                No scans yet. Run your first plant scan from the AI Lab.
+              </div>
+            ) : (
+              recent.map((item, i) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + i * 0.1 }}
+                  onClick={() => navigate(`/uploads?scan=${encodeURIComponent(item.id)}`)}
+                  className="glass rounded-xl p-4 flex items-center justify-between cursor-pointer hover:glow-green transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg glass p-2 glow-green-subtle">
+                      {item.isHealthy
+                        ? <CheckCircle2 className="h-4 w-4 text-primary" />
+                        : <AlertTriangle className="h-4 w-4 text-destructive" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">{item.date}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.date}</p>
-                  </div>
-                </div>
-                <span className="text-xs font-medium text-primary glass rounded-full px-3 py-1">
-                  {item.status}
-                </span>
-              </motion.div>
-            ))}
+                  <span className={`text-xs font-medium glass rounded-full px-3 py-1 ${item.isHealthy ? "text-primary" : "text-destructive"}`}>
+                    {item.status}
+                  </span>
+                </motion.div>
+              ))
+            )}
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Full analysis history coming soon with AI integration 🚀
+            Live data — synced from your account across devices 🌱
           </p>
         </motion.div>
       </div>

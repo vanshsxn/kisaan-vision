@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Check, ArrowLeft, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, ArrowLeft, Sparkles, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const PLANS = [
   {
@@ -33,9 +36,48 @@ const PLANS = [
   },
 ];
 
+const bookingSchema = z.object({
+  fullName: z.string().trim().min(2, "Name is required").max(100),
+  email: z.string().trim().email("Invalid email").max(255),
+  phone: z.string().trim().min(7, "Phone is required").max(20),
+  preferredDate: z.string().optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
 const Plans = () => {
-  const book = (planName: string) => {
-    toast.success(`We'll contact you about the ${planName} plan within 24 hours.`);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", preferredDate: "", notes: "" });
+
+  const submitBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlan) return;
+    const parsed = bookingSchema.safeParse(form);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { error } = await supabase.from("consultation_bookings").insert({
+        user_id: session?.user.id ?? null,
+        plan_name: selectedPlan,
+        full_name: parsed.data.fullName,
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+        preferred_date: parsed.data.preferredDate || null,
+        notes: parsed.data.notes || null,
+      });
+      if (error) throw error;
+      toast.success(`Booking received! We'll contact you within 24 hours about ${selectedPlan}.`);
+      setSelectedPlan(null);
+      setForm({ fullName: "", email: "", phone: "", preferredDate: "", notes: "" });
+    } catch (err: any) {
+      toast.error(`Booking failed: ${err?.message || "try again"}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -82,7 +124,7 @@ const Plans = () => {
                 ))}
               </ul>
               <button
-                onClick={() => book(plan.name)}
+                onClick={() => setSelectedPlan(plan.name)}
                 className={`w-full py-3 rounded-2xl text-sm font-bold transition ${
                   plan.popular
                     ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200"
@@ -95,6 +137,73 @@ const Plans = () => {
           ))}
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedPlan && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => !submitting && setSelectedPlan(null)}
+          >
+            <motion.form
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              onSubmit={submitBooking}
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Booking</p>
+                  <h2 className="text-xl font-extrabold text-slate-900">{selectedPlan}</h2>
+                </div>
+                <button type="button" onClick={() => setSelectedPlan(null)} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center">
+                  <X className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="text" placeholder="Full name *" required
+                  value={form.fullName}
+                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-sm"
+                />
+                <input
+                  type="email" placeholder="Email *" required
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-sm"
+                />
+                <input
+                  type="tel" placeholder="Phone / WhatsApp *" required
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-sm"
+                />
+                <input
+                  type="date"
+                  value={form.preferredDate}
+                  onChange={(e) => setForm({ ...form, preferredDate: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-sm"
+                />
+                <textarea
+                  placeholder="Notes (crop, issue, location...)" rows={3}
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-sm resize-none"
+                />
+              </div>
+
+              <button
+                type="submit" disabled={submitting}
+                className="mt-5 w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-bold text-sm flex items-center justify-center gap-2 transition shadow-md shadow-emerald-200"
+              >
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : "Confirm Booking"}
+              </button>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

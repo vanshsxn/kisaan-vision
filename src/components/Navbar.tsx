@@ -3,17 +3,10 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, LayoutDashboard, LogOut, Search, Bell, ShoppingCart, Sparkles, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
-
-interface NotificationItem {
-  id: string;
-  timestamp: number;
-  plantName: string;
-  disease: string;
-  isHealthy: boolean;
-  read: boolean;
-}
-
-const NOTIF_KEY = "kv_notifications_v1";
+import {
+  fetchNotifications, markNotificationRead, clearAllNotifications,
+  type AppNotification,
+} from "@/lib/notifications";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -21,20 +14,19 @@ const Navbar = () => {
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const loadNotifs = () => {
-    try {
-      const raw = localStorage.getItem(NOTIF_KEY);
-      setNotifications(raw ? JSON.parse(raw) : []);
-    } catch { setNotifications([]); }
+  const loadNotifs = async () => {
+    const list = await fetchNotifications();
+    setNotifications(list);
   };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      loadNotifs();
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -72,21 +64,21 @@ const Navbar = () => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAllRead = () => {
-    const next = notifications.map((n) => ({ ...n, read: true }));
-    setNotifications(next);
-    localStorage.setItem(NOTIF_KEY, JSON.stringify(next));
-  };
-
-  const clearNotifs = () => {
+  const clearNotifs = async () => {
     setNotifications([]);
-    localStorage.removeItem(NOTIF_KEY);
+    await clearAllNotifications();
   };
 
-  const openNotifs = () => {
-    setNotifOpen((v) => !v);
-    if (!notifOpen && unreadCount > 0) setTimeout(markAllRead, 600);
+  const handleNotifClick = async (n: AppNotification) => {
+    if (!n.read) {
+      await markNotificationRead(n.id);
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    }
+    setNotifOpen(false);
+    navigate(`/uploads?scan=${encodeURIComponent(n.id)}`);
   };
+
+  const openNotifs = () => setNotifOpen((v) => !v);
 
   return (
     <motion.nav
@@ -150,7 +142,7 @@ const Navbar = () => {
                         notifications.map((n) => (
                           <button
                             key={n.id}
-                            onClick={() => { setNotifOpen(false); navigate("/uploads"); }}
+                            onClick={() => handleNotifClick(n)}
                             className="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition flex items-start gap-3"
                           >
                             <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${n.isHealthy ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"}`}>

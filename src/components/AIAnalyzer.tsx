@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { addNotification } from "@/lib/notifications";
 
 import sampleAppleLeaf from "@/assets/samples/apple-leaf.jpg";
 import sampleTomato from "@/assets/samples/tomato-blight.jpg";
@@ -370,21 +371,14 @@ const AIAnalyzer = () => {
       setProgress(100);
       setResult(data);
 
-      // Notification for nav bell
+      // Notification (DB if signed in, localStorage fallback)
       try {
-        const notif = {
-          id: `${Date.now()}`,
-          timestamp: Date.now(),
+        await addNotification({
           plantName: data.plantName,
           disease: data.disease,
           isHealthy: data.isHealthy,
-          read: false,
-        };
-        const list = JSON.parse(localStorage.getItem("kv_notifications_v1") || "[]");
-        const next = [notif, ...list].slice(0, 20);
-        localStorage.setItem("kv_notifications_v1", JSON.stringify(next));
-        window.dispatchEvent(new Event("kv-notifications-updated"));
-      } catch {}
+        });
+      } catch (e) { console.warn("notif failed", e); }
 
       toast.success(`Diagnosis complete: ${data.plantName}`);
 
@@ -418,13 +412,21 @@ const AIAnalyzer = () => {
   }, []);
 
   const handleFile = useCallback(async (file?: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (JPG/PNG)");
+    if (!file) {
+      toast.error("No image selected. Please choose a plant image.");
+      return;
+    }
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!file.type.startsWith("image/") || (file.type && !allowed.includes(file.type))) {
+      toast.error("Unsupported format. Please upload a JPG, PNG, or WebP image.");
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
       toast.error("Image too large (max 15MB)");
+      return;
+    }
+    if (file.size < 1024) {
+      toast.error("Image looks empty or corrupt. Try another photo.");
       return;
     }
     try {
@@ -433,9 +435,12 @@ const AIAnalyzer = () => {
       setError(null);
       setResult(null);
       const dataUrl = await resizeImage(file);
+      const base64 = dataUrl.split(",")[1];
+      if (!base64 || base64.length < 100) {
+        throw new Error("Could not read image data — please try another file");
+      }
       setImageDataUrl(dataUrl);
       setImageFileName(file.name);
-      const base64 = dataUrl.split(",")[1];
       lastBase64Ref.current = base64;
       await runAnalysis(base64, dataUrl, file.name, 0);
     } catch (e: any) {
