@@ -15,15 +15,11 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // Non-blocking: redirect if already signed in, but render the form immediately
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        navigate("/", { replace: true });
-      } else {
-        setCheckingAuth(false);
-      }
+      if (session?.user) navigate("/", { replace: true });
     });
   }, [navigate]);
 
@@ -64,14 +60,6 @@ const Login = () => {
       toast.error(error.message || `Failed to sign in with ${provider}`);
     }
   };
-
-  if (checkingAuth) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
