@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      consultation_bookings: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string
+          plan_name: string
+          preferred_date: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          plan_name: string
+          preferred_date?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          plan_name?: string
+          preferred_date?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          disease: string | null
+          id: string
+          is_healthy: boolean
+          plant_name: string
+          read: boolean
+          scan_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          disease?: string | null
+          id?: string
+          is_healthy?: boolean
+          plant_name: string
+          read?: boolean
+          scan_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          disease?: string | null
+          id?: string
+          is_healthy?: boolean
+          plant_name?: string
+          read?: boolean
+          scan_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       plant_scans: {
         Row: {
           confidence: number
