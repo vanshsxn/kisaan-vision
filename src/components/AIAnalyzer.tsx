@@ -412,13 +412,21 @@ const AIAnalyzer = () => {
   }, []);
 
   const handleFile = useCallback(async (file?: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (JPG/PNG)");
+    if (!file) {
+      toast.error("No image selected. Please choose a plant image.");
+      return;
+    }
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!file.type.startsWith("image/") || (file.type && !allowed.includes(file.type))) {
+      toast.error("Unsupported format. Please upload a JPG, PNG, or WebP image.");
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
       toast.error("Image too large (max 15MB)");
+      return;
+    }
+    if (file.size < 1024) {
+      toast.error("Image looks empty or corrupt. Try another photo.");
       return;
     }
     try {
@@ -427,9 +435,12 @@ const AIAnalyzer = () => {
       setError(null);
       setResult(null);
       const dataUrl = await resizeImage(file);
+      const base64 = dataUrl.split(",")[1];
+      if (!base64 || base64.length < 100) {
+        throw new Error("Could not read image data — please try another file");
+      }
       setImageDataUrl(dataUrl);
       setImageFileName(file.name);
-      const base64 = dataUrl.split(",")[1];
       lastBase64Ref.current = base64;
       await runAnalysis(base64, dataUrl, file.name, 0);
     } catch (e: any) {
