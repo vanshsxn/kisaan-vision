@@ -47,6 +47,7 @@ const bookingSchema = z.object({
 const Plans = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmation, setConfirmation] = useState<{ id: string; plan: string; name: string; email: string } | null>(null);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", preferredDate: "", notes: "" });
 
   const submitBooking = async (e: React.FormEvent) => {
@@ -60,7 +61,7 @@ const Plans = () => {
     setSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { error } = await supabase.from("consultation_bookings").insert({
+      const { data, error } = await supabase.from("consultation_bookings").insert({
         user_id: session?.user.id ?? null,
         plan_name: selectedPlan,
         full_name: parsed.data.fullName,
@@ -68,9 +69,15 @@ const Plans = () => {
         phone: parsed.data.phone,
         preferred_date: parsed.data.preferredDate || null,
         notes: parsed.data.notes || null,
-      });
+      }).select("id").single();
       if (error) throw error;
-      toast.success(`Booking received! We'll contact you within 24 hours about ${selectedPlan}.`);
+      toast.success("Booking confirmed!");
+      setConfirmation({
+        id: data?.id ?? `KV-${Date.now()}`,
+        plan: selectedPlan,
+        name: parsed.data.fullName,
+        email: parsed.data.email,
+      });
       setSelectedPlan(null);
       setForm({ fullName: "", email: "", phone: "", preferredDate: "", notes: "" });
     } catch (err: any) {
