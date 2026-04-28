@@ -3,17 +3,10 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, LayoutDashboard, LogOut, Search, Bell, ShoppingCart, Sparkles, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
-
-interface NotificationItem {
-  id: string;
-  timestamp: number;
-  plantName: string;
-  disease: string;
-  isHealthy: boolean;
-  read: boolean;
-}
-
-const NOTIF_KEY = "kv_notifications_v1";
+import {
+  fetchNotifications, markNotificationRead, clearAllNotifications,
+  type AppNotification,
+} from "@/lib/notifications";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -21,20 +14,19 @@ const Navbar = () => {
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const loadNotifs = () => {
-    try {
-      const raw = localStorage.getItem(NOTIF_KEY);
-      setNotifications(raw ? JSON.parse(raw) : []);
-    } catch { setNotifications([]); }
+  const loadNotifs = async () => {
+    const list = await fetchNotifications();
+    setNotifications(list);
   };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      loadNotifs();
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
