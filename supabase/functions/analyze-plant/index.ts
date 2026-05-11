@@ -37,11 +37,18 @@ serve(async (req) => {
       ? imageBase64
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    const systemPrompt =
-      "You are an expert plant pathologist. Analyze the provided leaf/plant image. Identify the plant and any disease present. Be specific and confident. Always call the return_diagnosis tool with your findings.";
+    const systemPrompt = [
+      "You are a senior plant pathologist and botanist with deep expertise in agricultural diagnostics across cereals, vegetables, fruits, legumes, and ornamentals.",
+      "Carefully examine leaf shape, venation, color gradients, lesion morphology (margins, halos, concentric rings, powdery/fuzzy growth), distribution (interveinal, marginal, tip, scattered), and any signs of pests, nutrient deficiency or environmental stress.",
+      "Cross-reference visual cues with PlantVillage/CABI knowledge to pick the most probable plant species and disease (or confirm it is healthy).",
+      "Be confident but calibrated: confidence and healthScore must be 0–100 percentages (NOT 0–1 fractions). If the image is ambiguous, lower confidence accordingly and reflect that in symptoms.",
+      "Provide at least 4 visualCues that justify your conclusion (each with cue, description, location, confidence 0–100, supports).",
+      "If the plant is healthy, set isHealthy=true, disease='Healthy', severity='None', spreadRisk='Low', affectedArea=0, and healthScore≥85.",
+      "ALWAYS call the return_diagnosis tool — never reply in plain text.",
+    ].join(" ");
 
-    const aiPayload = {
-      model: "google/gemini-2.5-flash",
+    const buildPayload = (model: string) => ({
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         {
