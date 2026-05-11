@@ -829,6 +829,43 @@ const AIAnalyzer = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Sign-in required modal */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAuthModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center"
+            >
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                <ShieldCheck className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-900 mb-2">Sign in to scan</h3>
+              <p className="text-sm text-slate-500 mb-6">Create a free account to diagnose plants and save your scan history across devices.</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { setShowAuthModal(false); navigate("/login"); }}
+                  className="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md shadow-emerald-200"
+                >
+                  Sign in
+                </button>
+                <button
+                  onClick={() => setShowAuthModal(false)}
+                  className="w-full py-2.5 rounded-2xl text-slate-500 hover:bg-slate-50 font-bold text-sm"
+                >
+                  Not now
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
