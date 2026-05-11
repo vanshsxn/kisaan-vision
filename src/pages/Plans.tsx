@@ -71,9 +71,31 @@ const Plans = () => {
         notes: parsed.data.notes || null,
       }).select("id").single();
       if (error) throw error;
-      toast.success("Booking confirmed!");
+      const bookingId = data?.id ?? `KV-${Date.now()}`;
+      toast.success("Booking confirmed! Sending email confirmation...");
+
+      // Auto-send email confirmation via the user's mail client (works without a backend mail provider)
+      const planMeta = PLANS.find((p) => p.name === selectedPlan);
+      const subject = `Kisaan Vision — Booking Confirmation #${bookingId.slice(0, 8)}`;
+      const body =
+`Hi ${parsed.data.fullName},
+
+Your consultation booking is confirmed.
+
+• Plan: ${selectedPlan}
+• Price: ${planMeta?.price ?? ""} ${planMeta?.period ?? ""}
+• Booking ID: ${bookingId}
+• Phone: ${parsed.data.phone}
+${parsed.data.preferredDate ? `• Preferred date: ${parsed.data.preferredDate}\n` : ""}${parsed.data.notes ? `• Notes: ${parsed.data.notes}\n` : ""}
+Our agronomy team will reach out within 24 hours at ${parsed.data.email}.
+
+— Kisaan Vision`;
+      const mailto = `mailto:${encodeURIComponent(parsed.data.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      // Open in a new tab so it doesn't unload the SPA
+      window.open(mailto, "_blank");
+
       setConfirmation({
-        id: data?.id ?? `KV-${Date.now()}`,
+        id: bookingId,
         plan: selectedPlan,
         name: parsed.data.fullName,
         email: parsed.data.email,
