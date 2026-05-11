@@ -329,12 +329,12 @@ const AIAnalyzer = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setAuthed(!!s));
     return () => subscription.unsubscribe();
   }, []);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const requireAuth = useCallback(() => {
     if (authed) return true;
-    toast.error("Please sign in to scan a plant.");
-    navigate("/login");
+    setShowAuthModal(true);
     return false;
-  }, [authed, navigate]);
+  }, [authed]);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
