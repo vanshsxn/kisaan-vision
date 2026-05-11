@@ -45,7 +45,9 @@ export const fetchNotifications = async (): Promise<AppNotification[]> => {
   }));
 };
 
-export const addNotification = async (n: Omit<AppNotification, "id" | "timestamp" | "read"> & { scanId?: string | null }) => {
+export const addNotification = async (
+  n: Omit<AppNotification, "id" | "timestamp" | "read"> & { scanId?: string | null }
+): Promise<string | null> => {
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
     const { data, error } = await supabase
@@ -61,13 +63,14 @@ export const addNotification = async (n: Omit<AppNotification, "id" | "timestamp
       .single();
     if (!error && data) {
       window.dispatchEvent(new Event("kv-notifications-updated"));
-      return;
+      return (data as any).id as string;
     }
   }
   // fallback local
   const local = readLocal();
+  const id = n.scanId || `${Date.now()}`;
   local.unshift({
-    id: `${Date.now()}`,
+    id,
     timestamp: Date.now(),
     plantName: n.plantName,
     disease: n.disease,
@@ -77,6 +80,7 @@ export const addNotification = async (n: Omit<AppNotification, "id" | "timestamp
   });
   writeLocal(local);
   window.dispatchEvent(new Event("kv-notifications-updated"));
+  return id;
 };
 
 export const markNotificationRead = async (id: string) => {

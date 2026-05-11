@@ -75,7 +75,8 @@ const Navbar = () => {
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
     }
     setNotifOpen(false);
-    navigate(`/uploads?scan=${encodeURIComponent(n.id)}`);
+    const target = n.scanId || n.id;
+    navigate(`/uploads?scan=${encodeURIComponent(target)}&highlight=${encodeURIComponent(n.plantName)}`);
   };
 
   const openNotifs = () => setNotifOpen((v) => !v);

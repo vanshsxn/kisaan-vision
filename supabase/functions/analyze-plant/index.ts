@@ -37,11 +37,18 @@ serve(async (req) => {
       ? imageBase64
       : `data:image/jpeg;base64,${imageBase64}`;
 
-    const systemPrompt =
-      "You are an expert plant pathologist. Analyze the provided leaf/plant image. Identify the plant and any disease present. Be specific and confident. Always call the return_diagnosis tool with your findings.";
+    const systemPrompt = [
+      "You are a senior plant pathologist and botanist with deep expertise in agricultural diagnostics across cereals, vegetables, fruits, legumes, and ornamentals.",
+      "Carefully examine leaf shape, venation, color gradients, lesion morphology (margins, halos, concentric rings, powdery/fuzzy growth), distribution (interveinal, marginal, tip, scattered), and any signs of pests, nutrient deficiency or environmental stress.",
+      "Cross-reference visual cues with PlantVillage/CABI knowledge to pick the most probable plant species and disease (or confirm it is healthy).",
+      "Be confident but calibrated: confidence and healthScore must be 0–100 percentages (NOT 0–1 fractions). If the image is ambiguous, lower confidence accordingly and reflect that in symptoms.",
+      "Provide at least 4 visualCues that justify your conclusion (each with cue, description, location, confidence 0–100, supports).",
+      "If the plant is healthy, set isHealthy=true, disease='Healthy', severity='None', spreadRisk='Low', affectedArea=0, and healthScore≥85.",
+      "ALWAYS call the return_diagnosis tool — never reply in plain text.",
+    ].join(" ");
 
-    const aiPayload = {
-      model: "google/gemini-2.5-flash",
+    const buildPayload = (model: string) => ({
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         {
@@ -100,37 +107,33 @@ serve(async (req) => {
         },
       ],
       tool_choice: { type: "function", function: { name: "return_diagnosis" } },
-    };
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(aiPayload),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const MODELS = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash", "google/gemini-2.5-pro"];
+    let response: Response | null = null;
+    let lastErr = "";
+    let usedModel = "";
+    for (const m of MODELS) {
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload(m)),
+      });
+      if (r.ok) { response = r; usedModel = m; break; }
+      lastErr = await r.text();
+      console.warn(`[analyze-plant] model ${m} failed (${r.status}): ${lastErr}`);
+      if (r.status === 429 || r.status === 402) {
+        return new Response(JSON.stringify({ error: r.status === 429 ? "Rate limit exceeded. Please try again in a moment." : "AI credits exhausted. Add credits in Lovable workspace settings." }), {
+          status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits in Lovable workspace settings." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: `AI gateway error: ${errText}` }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    }
+    if (!response) {
+      return new Response(JSON.stringify({ error: `All AI models failed. Last error: ${lastErr}` }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log(`[analyze-plant] used model: ${usedModel}`);
 
     const result = await response.json();
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
@@ -143,6 +146,18 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    let analysis;
+    try {
+      analysis = JSON.parse(argsStr);
+    } catch (parseErr) {
+      console.error("Failed to parse tool args:", argsStr);
+      return new Response(JSON.stringify({ error: "AI returned invalid data format" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    analysis._model = usedModel;
 
     let analysis;
     try {

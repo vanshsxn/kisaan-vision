@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ArrowLeft, Sparkles, X, Loader2 } from "lucide-react";
+import { Check, ArrowLeft, Sparkles, X, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,9 +71,31 @@ const Plans = () => {
         notes: parsed.data.notes || null,
       }).select("id").single();
       if (error) throw error;
-      toast.success("Booking confirmed!");
+      const bookingId = data?.id ?? `KV-${Date.now()}`;
+      toast.success("Booking confirmed! Sending email confirmation...");
+
+      // Auto-send email confirmation via the user's mail client (works without a backend mail provider)
+      const planMeta = PLANS.find((p) => p.name === selectedPlan);
+      const subject = `Kisaan Vision — Booking Confirmation #${bookingId.slice(0, 8)}`;
+      const body =
+`Hi ${parsed.data.fullName},
+
+Your consultation booking is confirmed.
+
+• Plan: ${selectedPlan}
+• Price: ${planMeta?.price ?? ""} ${planMeta?.period ?? ""}
+• Booking ID: ${bookingId}
+• Phone: ${parsed.data.phone}
+${parsed.data.preferredDate ? `• Preferred date: ${parsed.data.preferredDate}\n` : ""}${parsed.data.notes ? `• Notes: ${parsed.data.notes}\n` : ""}
+Our agronomy team will reach out within 24 hours at ${parsed.data.email}.
+
+— Kisaan Vision`;
+      const mailto = `mailto:${encodeURIComponent(parsed.data.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      // Open in a new tab so it doesn't unload the SPA
+      window.open(mailto, "_blank");
+
       setConfirmation({
-        id: data?.id ?? `KV-${Date.now()}`,
+        id: bookingId,
         plan: selectedPlan,
         name: parsed.data.fullName,
         email: parsed.data.email,
@@ -241,12 +263,24 @@ const Plans = () => {
                 </div>
               </div>
 
-              <button
-                onClick={() => setConfirmation(null)}
-                className="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md shadow-emerald-200"
-              >
-                Done
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    const subject = `Kisaan Vision — Booking Confirmation #${confirmation.id.slice(0, 8)}`;
+                    const body = `Hi ${confirmation.name},\n\nYour booking for ${confirmation.plan} is confirmed.\nBooking ID: ${confirmation.id}\n\n— Kisaan Vision`;
+                    window.open(`mailto:${encodeURIComponent(confirmation.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_blank");
+                  }}
+                  className="w-full py-3 rounded-2xl bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold text-sm flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4" /> Resend email confirmation
+                </button>
+                <button
+                  onClick={() => setConfirmation(null)}
+                  className="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md shadow-emerald-200"
+                >
+                  Done
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
