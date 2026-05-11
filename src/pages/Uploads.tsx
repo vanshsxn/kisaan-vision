@@ -71,9 +71,18 @@ const Uploads = () => {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Scan Result</p>
-                <h2 className="text-xl font-extrabold text-slate-900">
-                  {focused.type === "local" ? focused.entry.plantName : focused.entry.plantName}
-                </h2>
+                <motion.h2
+                  key={focused.entry.plantName}
+                  initial={{ backgroundColor: "rgba(16,185,129,0.25)" }}
+                  animate={{ backgroundColor: "rgba(16,185,129,0)" }}
+                  transition={{ duration: 2.4, ease: "easeOut" }}
+                  className="text-xl font-extrabold text-slate-900 inline-block px-2 -mx-2 rounded-md"
+                >
+                  {focused.entry.plantName}
+                </motion.h2>
+                {highlightName && highlightName !== focused.entry.plantName && (
+                  <p className="text-xs text-slate-400 mt-1">Notification: <span className="font-bold text-emerald-600">{highlightName}</span></p>
+                )}
               </div>
               <button
                 onClick={() => setSearchParams({})}
