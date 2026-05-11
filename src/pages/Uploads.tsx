@@ -23,6 +23,7 @@ const Uploads = () => {
   const [notifs, setNotifs] = useState<AppNotification[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const scanId = searchParams.get("scan");
+  const highlightName = searchParams.get("highlight");
 
   useEffect(() => {
     try {
