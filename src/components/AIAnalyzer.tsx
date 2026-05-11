@@ -386,20 +386,12 @@ const AIAnalyzer = () => {
       setProgress(100);
       setResult(data);
 
-      // Notification (DB if signed in, localStorage fallback)
-      try {
-        await addNotification({
-          plantName: data.plantName,
-          disease: data.disease,
-          isHealthy: data.isHealthy,
-        });
-      } catch (e) { console.warn("notif failed", e); }
-
-      toast.success(`Diagnosis complete: ${data.plantName}`);
-
-      // Save to history
+      // Save to history first so the notification deep-links to this exact entry
+      const entryId = (typeof crypto !== "undefined" && (crypto as any).randomUUID)
+        ? (crypto as any).randomUUID()
+        : `${Date.now()}`;
       const entry: HistoryEntry = {
-        id: `${Date.now()}`,
+        id: entryId,
         timestamp: Date.now(),
         plantName: data.plantName,
         disease: data.disease,
@@ -410,6 +402,18 @@ const AIAnalyzer = () => {
       };
       saveHistoryEntry(entry);
       setHistory(loadHistory());
+
+      // Notification (DB if signed in, localStorage fallback) — links back to entryId
+      try {
+        await addNotification({
+          plantName: data.plantName,
+          disease: data.disease,
+          isHealthy: data.isHealthy,
+          scanId: entryId,
+        });
+      } catch (e) { console.warn("notif failed", e); }
+
+      toast.success(`Diagnosis complete: ${data.plantName}`);
     } catch (e: any) {
       const msg = e?.message || "Unknown error";
       console.error("[AIAnalyzer] analysis failed:", msg);
