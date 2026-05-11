@@ -263,12 +263,24 @@ Our agronomy team will reach out within 24 hours at ${parsed.data.email}.
                 </div>
               </div>
 
-              <button
-                onClick={() => setConfirmation(null)}
-                className="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md shadow-emerald-200"
-              >
-                Done
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    const subject = `Kisaan Vision — Booking Confirmation #${confirmation.id.slice(0, 8)}`;
+                    const body = `Hi ${confirmation.name},\n\nYour booking for ${confirmation.plan} is confirmed.\nBooking ID: ${confirmation.id}\n\n— Kisaan Vision`;
+                    window.open(`mailto:${encodeURIComponent(confirmation.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_blank");
+                  }}
+                  className="w-full py-3 rounded-2xl bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold text-sm flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4" /> Resend email confirmation
+                </button>
+                <button
+                  onClick={() => setConfirmation(null)}
+                  className="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md shadow-emerald-200"
+                >
+                  Done
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
