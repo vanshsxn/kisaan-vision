@@ -432,25 +432,26 @@ const AIAnalyzer = () => {
 
   const handleFile = useCallback(async (file?: File | null) => {
     if (!requireAuth()) return;
+    const tryAnother = { label: "Try another image", onClick: () => fileInputRef.current?.click() };
     if (!file) {
-      toast.error("No image selected. Please choose a plant image (JPG, PNG, or WebP).");
+      toast.error("No image selected. Please choose a plant image (JPG, PNG, or WebP).", { action: tryAnother });
       return;
     }
     const allowed = ["image/jpeg", "image/png", "image/webp"];
     if (!allowed.includes(file.type)) {
-      toast.error(`Unsupported format "${file.type || "unknown"}". Only JPG, PNG, or WebP are accepted.`);
+      toast.error(`Unsupported format "${file.type || "unknown"}". Only JPG, PNG, or WebP are accepted.`, { action: tryAnother });
       return;
     }
     if (file.size === 0) {
-      toast.error("Image file is empty (0 bytes). Please pick a different photo.");
+      toast.error("Image file is empty (0 bytes). Please pick a different photo.", { action: tryAnother });
       return;
     }
     if (file.size < 1024) {
-      toast.error("Image looks empty or corrupt (under 1 KB). Try another photo.");
+      toast.error("Image looks empty or corrupt (under 1 KB). Try another photo.", { action: tryAnother });
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
-      toast.error("Image too large (max 15MB). Compress and try again.");
+      toast.error("Image too large (max 15MB). Compress and try again.", { action: tryAnother });
       return;
     }
     try {
