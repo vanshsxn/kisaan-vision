@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, LayoutDashboard, LogOut, Search, Bell, ShoppingCart, Sparkles, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
 import {
-  fetchNotifications, markNotificationRead, clearAllNotifications,
+  fetchNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications,
   type AppNotification,
 } from "@/lib/notifications";
 
