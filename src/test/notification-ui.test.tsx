@@ -41,10 +41,10 @@ const markNotificationReadMock = vi.fn(async () => undefined);
 const clearAllNotificationsMock = vi.fn(async () => undefined);
 
 vi.mock("@/lib/notifications", () => ({
-  fetchNotifications: (...args: unknown[]) => fetchNotificationsMock(...args),
-  markAllNotificationsRead: (...args: unknown[]) => markAllNotificationsReadMock(...args),
-  markNotificationRead: (...args: unknown[]) => markNotificationReadMock(...args),
-  clearAllNotifications: (...args: unknown[]) => clearAllNotificationsMock(...args),
+  fetchNotifications: fetchNotificationsMock,
+  markAllNotificationsRead: markAllNotificationsReadMock,
+  markNotificationRead: markNotificationReadMock,
+  clearAllNotifications: clearAllNotificationsMock,
 }));
 
 describe("notification UI", () => {
@@ -70,6 +70,55 @@ describe("notification UI", () => {
       expect(screen.queryByTestId("notification-unread-badge")).not.toBeInTheDocument();
     });
     expect(markAllNotificationsReadMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes from a notification click to the exact scan detail page without runtime errors", async () => {
+    localStorage.setItem(
+      "kv_diagnosis_history_v1",
+      JSON.stringify([
+        {
+          id: "scan-1",
+          timestamp: Date.now(),
+          plantName: "Apple leaf",
+          disease: "Apple scab",
+          isHealthy: false,
+          thumbnail: "data:image/png;base64,test",
+          imageDataUrl: "data:image/png;base64,test",
+          diagnosis: {
+            plantName: "Apple leaf",
+            scientificName: "Malus domestica",
+            disease: "Apple scab",
+            diseaseScientific: "Venturia inaequalis",
+            confidence: 92,
+            severity: "Moderate",
+            isHealthy: false,
+            healthScore: 46,
+            affectedArea: 28,
+            spreadRisk: "Medium",
+            symptoms: ["Spots"],
+            treatment: ["Spray"],
+            prevention: ["Prune"],
+            visualCues: [],
+          },
+        },
+      ])
+    );
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<Navbar />} />
+          <Route path="/uploads" element={<Uploads />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByLabelText("Notifications"));
+    fireEvent.click(await screen.findByTestId("notification-item-notif-1"));
+
+    const title = await screen.findByTestId("scan-result-plant-name");
+    expect(title).toHaveTextContent("Apple leaf");
+    expect(markNotificationReadMock).toHaveBeenCalledWith("notif-1");
   });
 
   it("opens the exact scan detail and highlights the predicted plant name from a deep-link after refresh", async () => {
