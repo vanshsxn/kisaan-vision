@@ -113,7 +113,7 @@ const Navbar = () => {
               <button onClick={openNotifs} className="relative p-1 hover:text-[#4ade80] transition-colors" aria-label="Notifications">
                 <Bell size={20} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-extrabold rounded-full border-2 border-white flex items-center justify-center">
+                  <span data-testid="notification-unread-badge" className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-extrabold rounded-full border-2 border-white flex items-center justify-center">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -135,6 +135,7 @@ const Navbar = () => {
                               setNotifications((prev) => prev.map((x) => ({ ...x, read: true })));
                               await markAllNotificationsRead();
                             }}
+                            data-testid="mark-all-read-button"
                             className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-wider"
                           >
                             Mark all read
@@ -157,6 +158,7 @@ const Navbar = () => {
                           <button
                             key={n.id}
                             onClick={() => handleNotifClick(n)}
+                            data-testid={`notification-item-${n.id}`}
                             className="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition flex items-start gap-3"
                           >
                             <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${n.isHealthy ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"}`}>
