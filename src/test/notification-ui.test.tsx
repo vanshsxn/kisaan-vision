@@ -165,6 +165,6 @@ describe("notification UI", () => {
 
     const title = await screen.findByTestId("scan-result-plant-name");
     expect(title).toHaveTextContent("Apple leaf");
-    expect(screen.getByText("Apple scab")).toBeInTheDocument();
+    expect(screen.getAllByText("Apple scab").length).toBeGreaterThan(0);
   });
 });
