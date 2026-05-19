@@ -4,6 +4,13 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Uploads from "@/pages/Uploads";
 
+const notificationMocks = vi.hoisted(() => ({
+  fetchNotificationsMock: vi.fn(),
+  markAllNotificationsReadMock: vi.fn(async () => undefined),
+  markNotificationReadMock: vi.fn(async () => undefined),
+  clearAllNotificationsMock: vi.fn(async () => undefined),
+}));
+
 const mockNotifications = [
   {
     id: "notif-1",
@@ -35,22 +42,17 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-const fetchNotificationsMock = vi.fn();
-const markAllNotificationsReadMock = vi.fn(async () => undefined);
-const markNotificationReadMock = vi.fn(async () => undefined);
-const clearAllNotificationsMock = vi.fn(async () => undefined);
-
 vi.mock("@/lib/notifications", () => ({
-  fetchNotifications: fetchNotificationsMock,
-  markAllNotificationsRead: markAllNotificationsReadMock,
-  markNotificationRead: markNotificationReadMock,
-  clearAllNotifications: clearAllNotificationsMock,
+  fetchNotifications: notificationMocks.fetchNotificationsMock,
+  markAllNotificationsRead: notificationMocks.markAllNotificationsReadMock,
+  markNotificationRead: notificationMocks.markNotificationReadMock,
+  clearAllNotifications: notificationMocks.clearAllNotificationsMock,
 }));
 
 describe("notification UI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchNotificationsMock.mockResolvedValue(mockNotifications);
+    notificationMocks.fetchNotificationsMock.mockResolvedValue(mockNotifications);
     localStorage.clear();
   });
 
@@ -69,7 +71,7 @@ describe("notification UI", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("notification-unread-badge")).not.toBeInTheDocument();
     });
-    expect(markAllNotificationsReadMock).toHaveBeenCalledTimes(1);
+    expect(notificationMocks.markAllNotificationsReadMock).toHaveBeenCalledTimes(1);
   });
 
   it("routes from a notification click to the exact scan detail page without runtime errors", async () => {
@@ -118,7 +120,7 @@ describe("notification UI", () => {
 
     const title = await screen.findByTestId("scan-result-plant-name");
     expect(title).toHaveTextContent("Apple leaf");
-    expect(markNotificationReadMock).toHaveBeenCalledWith("notif-1");
+    expect(notificationMocks.markNotificationReadMock).toHaveBeenCalledWith("notif-1");
   });
 
   it("opens the exact scan detail and highlights the predicted plant name from a deep-link after refresh", async () => {
