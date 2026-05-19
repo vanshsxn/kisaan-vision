@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke:diagnostics": "node scripts/diagnostics-smoke-test.mjs"
+    "smoke:diagnostics": "node scripts/diagnostics-smoke-test.mjs",
+    "smoke:notifications": "vitest run src/test/notification-ui.test.tsx"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
