@@ -48,13 +48,27 @@ const Uploads = () => {
 
   // Find a focused scan: first try local history by id, then fallback to notification
   const focused = useMemo(() => {
-    if (!scanId) return null;
-    const local = items.find((i) => i.id === scanId);
-    if (local) return { type: "local" as const, entry: local };
-    const notif = notifs.find((n) => n.id === scanId);
-    if (notif) return { type: "notif" as const, entry: notif };
+    const scanMatch = scanId
+      ? items.find((i) => i.id === scanId) ?? notifs.find((n) => n.scanId === scanId || n.id === scanId)
+      : null;
+
+    if (scanMatch) {
+      return "thumbnail" in scanMatch
+        ? { type: "local" as const, entry: scanMatch }
+        : { type: "notif" as const, entry: scanMatch };
+    }
+
+    const normalizedHighlight = highlightName?.trim().toLowerCase();
+    if (!normalizedHighlight) return null;
+
+    const localHighlight = items.find((i) => i.plantName.trim().toLowerCase() === normalizedHighlight);
+    if (localHighlight) return { type: "local" as const, entry: localHighlight };
+
+    const notifHighlight = notifs.find((n) => n.plantName.trim().toLowerCase() === normalizedHighlight);
+    if (notifHighlight) return { type: "notif" as const, entry: notifHighlight };
+
     return null;
-  }, [scanId, items, notifs]);
+  }, [scanId, highlightName, items, notifs]);
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4">
@@ -76,6 +90,7 @@ const Uploads = () => {
                   initial={{ backgroundColor: "rgba(16,185,129,0.25)" }}
                   animate={{ backgroundColor: "rgba(16,185,129,0)" }}
                   transition={{ duration: 2.4, ease: "easeOut" }}
+                  data-testid="scan-result-plant-name"
                   className="text-xl font-extrabold text-slate-900 inline-block px-2 -mx-2 rounded-md"
                 >
                   {focused.entry.plantName}
