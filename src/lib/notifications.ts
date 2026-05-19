@@ -94,6 +94,17 @@ export const markNotificationRead = async (id: string) => {
   window.dispatchEvent(new Event("kv-notifications-updated"));
 };
 
+export const markAllNotificationsRead = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    await supabase.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false);
+  } else {
+    const local = readLocal().map((n) => ({ ...n, read: true }));
+    writeLocal(local);
+  }
+  window.dispatchEvent(new Event("kv-notifications-updated"));
+};
+
 export const clearAllNotifications = async () => {
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
