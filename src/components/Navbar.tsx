@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, LayoutDashboard, LogOut, Search, Bell, ShoppingCart, Sparkles, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
 import {
-  fetchNotifications, markNotificationRead, clearAllNotifications,
+  fetchNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications,
   type AppNotification,
 } from "@/lib/notifications";
 
@@ -126,11 +126,24 @@ const Navbar = () => {
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute right-0 mt-3 w-80 bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden"
                   >
-                    <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                    <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between gap-2">
                       <p className="text-sm font-extrabold text-slate-700">Notifications</p>
-                      {notifications.length > 0 && (
-                        <button onClick={clearNotifs} className="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase tracking-wider">Clear</button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={async () => {
+                              setNotifications((prev) => prev.map((x) => ({ ...x, read: true })));
+                              await markAllNotificationsRead();
+                            }}
+                            className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-wider"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button onClick={clearNotifs} className="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase tracking-wider">Clear</button>
+                        )}
+                      </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
                       {notifications.length === 0 ? (

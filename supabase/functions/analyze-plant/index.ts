@@ -147,7 +147,7 @@ serve(async (req) => {
       });
     }
 
-    let analysis;
+    let analysis: any;
     try {
       analysis = JSON.parse(argsStr);
     } catch (parseErr) {
@@ -157,18 +157,49 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    analysis._model = usedModel;
 
-    let analysis;
-    try {
-      analysis = JSON.parse(argsStr);
-    } catch (parseErr) {
-      console.error("Failed to parse tool args:", argsStr);
-      return new Response(JSON.stringify({ error: "AI returned invalid data format" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ---- Server-side validation & normalization ----
+    const clamp = (n: any, min = 0, max = 100) => {
+      let v = Number(n);
+      if (!Number.isFinite(v)) v = 0;
+      if (v > 0 && v <= 1) v = v * 100; // normalize fractional outputs
+      return Math.max(min, Math.min(max, Math.round(v)));
+    };
+
+    analysis.confidence = clamp(analysis.confidence);
+    analysis.healthScore = clamp(analysis.healthScore);
+    analysis.affectedArea = clamp(analysis.affectedArea);
+
+    if (!Array.isArray(analysis.visualCues)) analysis.visualCues = [];
+    analysis.visualCues = analysis.visualCues.map((c: any) => ({
+      cue: String(c?.cue ?? "Visual signal"),
+      description: String(c?.description ?? ""),
+      location: String(c?.location ?? "leaf"),
+      confidence: clamp(c?.confidence),
+      supports: ["plant", "disease", "both"].includes(c?.supports) ? c.supports : "both",
+    }));
+
+    // Ensure at least 4 visualCues — pad with low-confidence generic observations
+    const fillers = [
+      { cue: "Leaf morphology", description: "Overall leaf shape and venation reviewed.", location: "whole leaf", confidence: 55, supports: "plant" },
+      { cue: "Color distribution", description: "Color gradients across the lamina assessed.", location: "leaf surface", confidence: 55, supports: "both" },
+      { cue: "Lesion margins", description: "Edges of any discoloration examined for halos/rings.", location: "lesion zones", confidence: 50, supports: "disease" },
+      { cue: "Texture cues", description: "Surface texture inspected for powdery or fuzzy growth.", location: "leaf surface", confidence: 50, supports: "disease" },
+    ];
+    let i = 0;
+    while (analysis.visualCues.length < 4 && i < fillers.length) {
+      analysis.visualCues.push(fillers[i++]);
     }
+
+    if (analysis.isHealthy) {
+      if (analysis.healthScore < 85) analysis.healthScore = 85;
+      analysis.disease = analysis.disease || "Healthy";
+      analysis.severity = "None";
+      analysis.spreadRisk = "Low";
+      analysis.affectedArea = 0;
+    }
+
+    analysis._model = usedModel;
 
     return new Response(JSON.stringify(analysis), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
